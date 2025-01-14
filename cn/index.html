@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>zalem.app - CN</title>
+  <title>zalem.app</title>
   <style>
+    /* ---------------------------
+       保留原有的视觉效果与布局
+       --------------------------- */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -28,10 +31,6 @@
       font-weight: bold;
       margin-bottom: 5px;
     }
-    h1 .slogan {
-      font-size: 18px;
-      margin-bottom: 5px;
-    }
     h1 .title {
       font-size: 15px; /* 缩小字体大小 */
     }
@@ -47,7 +46,7 @@
     #quiz-container,
     #result-container,
     #mistake-review-container,
-    #current-mistakes-container,
+    /* #current-mistakes-container,  注: 仍保留, 只是不在startMistakeQuiz里调用 */
     #console-logs-container,
     #update-logs-container,
     #function-intro-container,
@@ -61,25 +60,24 @@
       background-color: #fff;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       padding: 20px;
-      display: none; /* Hidden by default */
+      display: none; /* 默认隐藏容器 */
     }
 
     #container,
     #battle-mode-selection-container {
-      display: block; /* 默认显示主页和大乱斗弹窗 */
+      display: block; /* 主页 和 大乱斗选择容器默认显示 */
     }
 
-    #sheet-selection {
+    /* 菜单分类按钮布局 */
+    #category-selection {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
       margin-bottom: 20px;
     }
-    #sheet-selection button {
-      flex: 0 1 auto;
+    #category-selection button {
       padding: 10px 15px;
-      background: #007BFF;
       color: #fff;
       border: none;
       border-radius: 5px;
@@ -88,9 +86,13 @@
       transition: all 0.3s ease;
       white-space: nowrap;
     }
-    #sheet-selection button:hover {
+    #category-selection button:hover {
       transform: translateY(-3px);
       box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    #sheet-selection {
+      display: none;
     }
 
     #info {
@@ -129,7 +131,7 @@
       box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
 
-    /* 优化三大复选框的排版(随机题序、自动翻题、显示日语) */
+    /* 三大复选框布局 */
     #random-option {
       display: flex;
       flex-wrap: wrap;
@@ -151,9 +153,9 @@
       width: 20px;
       height: 20px;
       margin-right: 6px;
-      vertical-align: middle;
     }
 
+    /* 考题与选项布局 */
     #question {
       font-size: 18px;
       margin: 20px 0;
@@ -163,9 +165,8 @@
       text-align: center;
       min-height: 50px; 
       line-height: 1.4;
-      white-space: pre-wrap; /* Preserve line breaks */
+      white-space: pre-wrap;
     }
-
     #image {
       margin-bottom: 20px;
       border: 2px solid #ccc;
@@ -182,7 +183,6 @@
       max-height: 150px;
       object-fit: contain;
     }
-
     .options,
     .controls {
       display: flex;
@@ -194,7 +194,6 @@
       flex: 1;
       margin: 0 5px;
     }
-
     button {
       padding: 10px 15px;
       border: none;
@@ -211,8 +210,9 @@
       box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
 
+    /* 正确/错误按钮及高亮 */
     .correct {
-      background: #28a745; /* Green */
+      background: #28a745; /* 绿色 */
       color: #fff;
     }
     .correct.highlight {
@@ -220,17 +220,22 @@
       box-shadow: 0 0 10px #1e7e34;
     }
     .wrong {
-      background: #dc3545; /* Red */
+      background: #dc3545; /* 红色 */
       color: #fff;
+      border: 2px solid #fff;
+      position: relative;
     }
     .wrong.highlight {
       background: #c82333;
       box-shadow: 0 0 10px #c82333;
     }
+    .wrong span {
+      text-shadow: -1px 0 #fff, 0 1px #fff, 1px 0 #fff, 0 -1px #fff;
+    }
 
     /* 收藏按钮（星标） */
     #favorite-btn {
-      background: #ccc; 
+      background: #ccc;
       color: #000;
       flex: 0 1 auto;
       max-width: 70px;
@@ -238,85 +243,50 @@
       font-size: 18px;
     }
     #favorite-btn.favorited {
-      background: #ffeb3b; /* 高亮颜色 */
-      color: #d9534f;     /* 文字色 */
+      background: #ffeb3b; /* 高亮 */
+      color: #d9534f;
     }
 
+    /* 展示正确答案/解说 */
     #answer-display {
       font-size: 18px;
       font-weight: bold;
       color: #FF4D4D;
       margin-top: 10px;
       text-align: center;
-      white-space: pre-wrap; /* Preserve line breaks */
+      white-space: pre-wrap;
     }
 
+    /* 题目余量与计时 */
     #remaining-questions {
       text-align: center; 
       margin-top: 20px;
       font-size: 16px;
       color: #333;
     }
-
-    #mistake-questions > div,
-    #current-mistakes-list > div {
-      border-bottom: 1px solid #ccc;
-      margin-bottom: 15px;
-      padding-bottom: 15px;
-      line-height: 1.4;
-    }
-    #mistake-questions img,
-    #current-mistakes-list img {
+    #timer {
+      text-align: center;
+      font-size: 18px;
       margin-top: 10px;
-      border-radius: 5px;
-      max-height:150px;
-      object-fit:contain;
-      max-width:100%;
+      color: #333;
     }
 
-    #mistake-review-container button,
-    #current-mistakes-container button,
-    #console-logs-container button,
-    #update-logs-container button,
-    #function-intro-container button,
-    #summary-container button,
-    #battle-mode-selection-container button,
-    #favorites-container button {
-      margin-top: 10px;
+    /* 考试结果样式 */
+    #score.score-excellent {
+      color: #28a745;
+      font-size: 32px;
+      font-weight: bold;
     }
-
-    #console-logs-content table {
-      width:100%;
-      border-collapse: collapse;
-      margin-top:20px;
+    #score.score-good {
+      color: #ffc107;
+      font-size: 32px;
+      font-weight: bold;
     }
-    #console-logs-content table,
-    #console-logs-content th,
-    #console-logs-content td {
-      border:1px solid #ccc;
-      padding:5px;
-      text-align:left;
-      font-size:14px;
+    #score.score-bad {
+      color: #dc3545;
+      font-size: 32px;
+      font-weight: bold;
     }
-    #console-logs-content th {
-      background: #f9f9f9;
-    }
-
-    #update-logs-container,
-    #function-intro-container,
-    #summary-container,
-    #battle-mode-selection-container,
-    #favorites-container {
-      display:none;
-    }
-
-    #update-logs-list,
-    #summary-content {
-      font-size:14px;
-      line-height:1.6;
-    }
-
-    /* Progress Bar Styles */
     .progress-bar-container {
       width: 100%;
       background-color: #e0e0e0;
@@ -337,67 +307,7 @@
       font-weight: bold;
     }
 
-    /* Summary Table Styles */
-    .summary-sheet {
-      margin-bottom: 20px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 15px;
-      background-color: #f9f9f9;
-    }
-    .summary-sheet h3 {
-      margin-top: 0;
-    }
-    .summary-sheet table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .summary-sheet th,
-    .summary-sheet td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-    .summary-sheet th {
-      background-color: #f1f1f1;
-    }
-
-    /* Summary Performance Styles */
-    .individual-performance,
-    .average-performance {
-      margin-bottom: 10px;
-    }
-    .individual-performance p,
-    .average-performance p {
-      margin: 5px 0;
-    }
-
-    /* Timer Styles */
-    #timer {
-      text-align: center;
-      font-size: 18px;
-      margin-top: 10px;
-      color: #333;
-    }
-
-    /* Score Message Styles */
-    .score-excellent {
-      color: #28a745; /* Green */
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .score-good {
-      color: #ffc107; /* Yellow */
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .score-bad {
-      color: #dc3545; /* Red */
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    /* Battle Mode Selection Styles */
+    /* 大乱斗弹窗样式 */
     #battle-mode-selection-container {
       position: fixed;
       top: 0;
@@ -419,17 +329,11 @@
       max-height: 80%;
       overflow-y: auto;
     }
-    #battle-mode-selection h3 {
-      margin-top: 0;
-    }
     #battle-mode-selection .sheet-option {
       margin-bottom: 10px;
     }
-    #battle-mode-selection button {
-      margin-top: 10px;
-    }
 
-    /* Initial Message Area Styles */
+    /* 初始消息区域 */
     #initial-message {
       background-color: #fff3cd;
       border: 1px solid #ffeeba;
@@ -449,49 +353,83 @@
       max-width: 200px;
       cursor: pointer;
     }
+
+    /* 错题、收藏、日志等容器 */
+    #mistake-questions > div {
+      border-bottom: 1px solid #ccc;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      line-height: 1.4;
+    }
+    #console-logs-content table {
+      width:100%;
+      border-collapse: collapse;
+      margin-top:20px;
+    }
+    #console-logs-content table,
+    #console-logs-content th,
+    #console-logs-content td {
+      border:1px solid #ccc;
+      padding:5px;
+      text-align:left;
+      font-size:14px;
+    }
+    #console-logs-content th {
+      background: #f9f9f9;
+    }
+
+    /* 更新日志 & 功能介绍 & 汇总表现的容器 */
+    #update-logs-list,
+    #summary-content {
+      font-size:14px;
+      line-height:1.6;
+    }
+    .summary-sheet {
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      background-color: #f9f9f9;
+    }
+    .summary-sheet h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 18px;
+      text-align: left;
+    }
+    .summary-sheet table {
+      width: auto;
+      min-width: 600px;
+      overflow-x: auto;
+      display: block;
+      white-space: nowrap;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .summary-sheet th,
+    .summary-sheet td {
+      border: 1px solid #ccc;
+      padding: 5px 8px;
+      text-align: center;
+      font-size: 13px;
+    }
+    .summary-sheet th {
+      background-color: #f1f1f1;
+      font-weight: normal;
+      white-space: nowrap;
+    }
   </style>
-  
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-ER1N8KVZPZ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  // 自动识别路径并记录语言属性
-  const languageMap = {
-    '/jp': 'Japanese',
-    '/cn': 'Chinese',
-    '/en': 'English',
-    '/vn': 'Vietnamese',
-    '/kr': 'Korean'
-  };
-  const currentPath = window.location.pathname;
-  const currentLanguage = languageMap[currentPath] || 'Unknown';
-
-  // 配置页面路径
-  gtag('config', 'G-ER1N8KVZPZ', {
-    'page_path': currentPath
-  });
-
-  // 自定义事件记录语言属性
-  gtag('event', 'set_language', {
-    'event_category': 'Language',
-    'event_label': currentLanguage,
-    'value': 1
-  });
-</script>
 </head>
 <body>
-  <!-- 大标题板块，包含域名/口号/标题 -->
+  <!-- 顶部标题，点击可返回首页 -->
   <h1 onclick="resetQuiz()">
     <div class="domain">zalem.app</div>
     <div class="title">道路千万条，安全第一条；行车不规范，亲人泪两行！</div>
   </h1>
 
+  <!-- 主容器：分类选择 & 复选框 -->
   <div id="container">
-    <!-- 套题板块 -->
-    <h2>请选择套题</h2>
+    <h2>请选择套题类别</h2>
     <div id="random-option">
       <label>
         <input type="checkbox" id="random-checkbox"> 随机题序
@@ -504,20 +442,22 @@
       </label>
     </div>
 
-    <div id="sheet-selection">加载中...</div>
+    <!-- 类别按钮区域 -->
+    <div id="category-selection">加载中...</div>
+
+    <!-- 原先 sheet-selection 隐藏，不再使用 -->
+    <div id="sheet-selection" style="display:none;">加载中...</div>
     
-    <!-- 按钮群 -->
+    <!-- 底部按钮区 -->
     <div id="info">
       <div class="top-buttons">
         <button onclick="showSummary()" style="background: #17a2b8;">汇总表现</button>
-        <button onclick="startMistakeQuiz()">错题复习</button>
         <button id="continue-exam-btn" style="display:none;" onclick="continueExam()">继续考试</button>
-        <button onclick="openBattleModeSelection()" style="background: #6f42c1;">大乱斗</button>
       </div>
       <div class="bottom-buttons">
-        <button onclick="showFavorites()" style="background:#f0ad4e;">我的收藏</button>
         <button onclick="showFunctionIntro()">功能介绍</button>
         <button onclick="showUpdateLogs()">更新日志</button>
+        <!-- 新增：下载本地log.txt按钮 -->
         <button onclick="viewConsoleLogs()">控制台</button>
         <button onclick="clearAllHistory()">清除历史</button>
       </div>
@@ -530,28 +470,31 @@
     </div>
   </div>
 
-  <!-- 大乱斗模式选择容器 -->
+  <!-- 大乱斗模式选择弹层 -->
   <div id="battle-mode-selection-container">
     <div id="battle-mode-selection">
       <h3>选择参与大乱斗的套题</h3>
       <div id="battle-sheet-selection">
-        <!-- 动态生成套题复选框 -->
+        <!-- 复选框列表由脚本动态生成 -->
       </div>
       <button onclick="startBattleMode()">开始大乱斗</button>
       <button onclick="closeBattleModeSelection()">取消</button>
     </div>
   </div>
 
-  <!-- 正常考试容器 -->
+  <!-- 考试容器 -->
   <div id="quiz-container" style="display: none;">
     <h2 id="sheet-name">加载中...</h2>
     <div id="question">加载中...</div>
     <div id="image" style="display:none;"></div>
     <div class="options">
-      <button id="btn-correct" class="correct" onclick="selectAnswer('⭕')">⭕ 正确</button>
-      <button id="btn-wrong" class="wrong" onclick="selectAnswer('❌')">❌ 错误</button>
+      <button id="btn-correct" class="correct" onclick="selectAnswer('⭕')">
+        <span>⭕</span> 正确
+      </button>
+      <button id="btn-wrong" class="wrong" onclick="selectAnswer('❌')">
+        <span>❌</span> 错误
+      </button>
     </div>
-    <!-- 收藏按钮 -->
     <div class="controls">
       <button onclick="previousQuestion()">上一题</button>
       <button onclick="nextQuestion()">下一题</button>
@@ -567,11 +510,11 @@
     </div>
   </div>
 
-  <!-- 考试结果 -->
+  <!-- 考试结果容器 -->
   <div id="result-container" style="display: none;">
     <h2>考试结束</h2>
     <div style="text-align: center;">
-      <p id="score" class="score-excellent" style="font-size: 32px; font-weight: bold; color: #28a745;"></p>
+      <p id="score" style="font-size: 32px; font-weight: bold;"></p>
       <p id="mistake-count" style="font-size: 20px; color: #dc3545;"></p>
       <p id="correct-count" style="font-size: 20px; color: #28a745;"></p>
       <p id="unanswered-count" style="font-size: 20px; color: #ffc107;"></p>
@@ -584,17 +527,16 @@
     <button onclick="viewMistakes()">查看本次错题</button>
   </div>
 
-  <!-- 本次错题列表 -->
-  <div id="current-mistakes-container" style="display:none;">
+  <!-- 本次错题列表（仅供考试结束后查看，不在“错题复习”模式中出现） -->
+  <div id="current-mistakes-container" style="display: none;">
     <h2>本次错题</h2>
     <div id="current-mistakes-list"></div>
-    <button onclick="startMistakeQuiz()">复习错题</button>
     <button onclick="showScore()">返回评分</button>
     <button onclick="resetQuiz()">返回首页</button>
   </div>
 
-  <!-- 占位 -->
-  <div id="mistake-review-container" style="display:none;"></div>
+  <!-- 错题复习容器（去掉“本次错题”板块） -->
+  <div id="mistake-review-container"></div>
 
   <!-- 我的收藏容器 -->
   <div id="favorites-container">
@@ -606,14 +548,14 @@
   </div>
 
   <!-- 控制台日志 -->
-  <div id="console-logs-container" style="display:none;">
+  <div id="console-logs-container">
     <h2>控制台</h2>
     <div id="console-logs-content">加载中...</div>
     <button onclick="resetQuiz()">返回首页</button>
   </div>
 
   <!-- 更新日志 -->
-  <div id="update-logs-container" style="display:none;">
+  <div id="update-logs-container">
     <h2>更新日志</h2>
     <div id="update-logs-list">
       <p>加载中...</p>
@@ -622,7 +564,7 @@
   </div>
 
   <!-- 功能介绍 -->
-  <div id="function-intro-container" style="display:none;">
+  <div id="function-intro-container">
     <h2>功能介绍</h2>
     <div id="function-intro-content">
       <p>加载中...</p>
@@ -631,7 +573,7 @@
   </div>
 
   <!-- 汇总表现 -->
-  <div id="summary-container" style="display:none;">
+  <div id="summary-container">
     <h2>汇总表现</h2>
     <div id="summary-content">加载中...</div>
     <button onclick="resetQuiz()">返回首页</button>
@@ -639,891 +581,341 @@
 
   <script>
     /**************************************************
-     * 1) 旧的题库相关API配置
+     * [1] 系统信息表 - 用于动态获取套题配置、日志记录等
      **************************************************/
-    const apiKey = "AIzaSyC_fcYBMTNaPt0u6qAvpn_73LlKwJbZ3Yw"; 
-    const spreadsheetId = "1kiLBE8arF8OJyaAcO2AB_Jjd6_QNQQ1FbPp6Pn9CB64";
+    const SYSTEM_SPREADSHEET_ID = "1bkTNZje3ehMPn2-PNH-yLT1kPpRvs_HAfiYuPg2jA6w";
+    const SYSTEM_API_KEY = "AIzaSyApEcu1zgGEexoS_diT6PkCPQDWkX5Adhk";
+    // 若系统信息表中“系统log”工作表叫别的名称，请改这里
+    const LOG_SHEET_NAME = "系统log";  
 
     /**************************************************
-     * 1.1) 新的题库API配置
+     * 全局状态
      **************************************************/
-    const newApiKey = "AIzaSyApEcu1zgGEexoS_diT6PkCPQDWkX5Adhk";
-    const newSpreadsheetId = "1j6BNjRqlnEIGd3ZEgQQqamPLhQt82b3N90ZMH-5lVEY";
+    let logs = []; // 记录事件/错误/访问等(下载或上传到Sheet)
+    let userLocation = "未知地点";
+    let categoriesData = [];  // “考题管理”读取到的所有套题配置
+    let sheetListForBattle = []; // 大乱斗(CN)列表
 
-    /**************************************************
-     * 2) 系统表格API配置（留言板、更新日志、功能介绍等）
-     **************************************************/
-    const systemApiKey = "AIzaSyApEcu1zgGEexoS_diT6PkCPQDWkX5Adhk";
-    const systemSpreadsheetId = "1bkTNZje3ehMPn2-PNH-yLT1kPpRvs_HAfiYuPg2jA6w";
-
-    /**************************************************
-     * 3) 日语题库API配置
-     **************************************************/
-    const jpSpreadsheetId = "1B3k4cKFSJK0PT3lpabHhedPohbWYUt1UfncdDI_ryYk";
-    const jpApiKey = newApiKey; // 直接复用 newApiKey
-
-    // 全局状态
-    let sheetList = []; 
+    // 当前考试相关
     let questions = [];
     let currentQuestionIndex = 0;
-    let userAnswers = [];
     let currentSheetName = "";
+    let userAnswers = [];
     let answerVisible = false;
-    let mistakeQuestions = [];  // 本次考试做错的题
-    let logs = [];
-    let quizStartTime = null;
-    let quizEndTime = null;
-    let timerInterval = null;
-    let elapsedTime = 0;
-    let userLocation = "未知地点";
+    let mistakeQuestions = [];
+    let favorites = {};
+
     let isBattleMode = false;
     let isMistakeMode = false;
     let isFavoritesMode = false;
 
+    // 计时器
+    let quizStartTime = null;
+    let quizEndTime = null;
+    let timerInterval = null;
+    let elapsedTime = 0;
+
+    // 三大复选框
     let randomOrder = loadRandomOrderSetting();
     let autoNext = loadAutoNextSetting();
     let showJapanese = loadShowJapaneseSetting();
 
-    let favorites = loadFavorites(); // 收藏
 
-    document.addEventListener('DOMContentLoaded', () => {
-      // 三大复选框
-      const randomCheckbox = document.getElementById('random-checkbox');
-      randomCheckbox.checked = randomOrder; 
-      randomCheckbox.addEventListener('change', () => {
-        randomOrder = randomCheckbox.checked;
+    /***********************************************
+     * DOMContentLoaded入口
+     ***********************************************/
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 复选框初始
+      document.getElementById('random-checkbox').checked = randomOrder;
+      document.getElementById('random-checkbox').addEventListener('change',()=>{
+        randomOrder = document.getElementById('random-checkbox').checked;
         saveRandomOrderSetting(randomOrder);
+        logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'toggle randomOrder', randomOrder}});
       });
-
-      const autoNextCheckbox = document.getElementById('autonext-checkbox');
-      autoNextCheckbox.checked = autoNext;
-      autoNextCheckbox.addEventListener('change', () => {
-        autoNext = autoNextCheckbox.checked;
+      document.getElementById('autonext-checkbox').checked = autoNext;
+      document.getElementById('autonext-checkbox').addEventListener('change',()=>{
+        autoNext = document.getElementById('autonext-checkbox').checked;
         saveAutoNextSetting(autoNext);
+        logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'toggle autoNext', autoNext}});
       });
-
-      const showJapaneseCheckbox = document.getElementById('show-japanese-checkbox');
-      showJapaneseCheckbox.checked = showJapanese;
-      showJapaneseCheckbox.addEventListener('change', () => {
-        showJapanese = showJapaneseCheckbox.checked;
+      document.getElementById('show-japanese-checkbox').checked = showJapanese;
+      document.getElementById('show-japanese-checkbox').addEventListener('change',()=>{
+        showJapanese = document.getElementById('show-japanese-checkbox').checked;
         saveShowJapaneseSetting(showJapanese);
-        // 刷新当前题
-        if(document.getElementById('quiz-container').style.display === 'block') {
+        logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'toggle showJapanese', showJapanese}});
+        // 若正在考试中，可更新题目显示
+        if(document.getElementById('quiz-container').style.display==='block'){
           loadQuestion();
         }
       });
 
-      const savedExam = loadCurrentExam();
-      if(savedExam) {
-        document.getElementById('continue-exam-btn').style.display = 'inline-block';
+      // 加载收藏
+      favorites = loadFavorites();
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'loaded favorites', count:Object.keys(favorites).length}});
+
+      // 检测是否有未完成考试
+      if(loadCurrentExam()) {
+        document.getElementById('continue-exam-btn').style.display='inline-block';
       }
 
-      // 加载留言板、更新日志等
+      // 获取IP & 地理位置 => 写log
+      await getClientIPAndLogAccess();
+
+      // 加载一些初始信息
       loadInitialMessages();
       loadUpdateLogs();
       loadFunctionIntro();
+
+      // 从系统表中获取所有套题配置信息
+      await fetchCategoriesData();
+
+      // 渲染左侧分类按钮
+      renderCategoryButtons();
+
+      // 大乱斗候选 = CN语言的套题
+      sheetListForBattle = categoriesData.filter(x => x.lang==="CN");
     });
 
-    getClientIPAndLogAccess();
-    fetchSheetNamesFromBothLibraries();
-    window.addEventListener('beforeunload', () => {
-      if(document.getElementById('quiz-container').style.display === 'block') {
+    window.addEventListener('beforeunload',()=>{
+      // 若正在考试，离开时保存进度
+      if(document.getElementById('quiz-container').style.display==='block'){
         saveCurrentExam();
       }
     });
 
     /********************************************
-     * 三大复选框设置
+     *  1) 动态获取“考题管理”Sheet数据
      ********************************************/
-    function loadRandomOrderSetting() {
-      const setting = localStorage.getItem('randomOrder');
-      return setting === 'true'; 
-    }
-    function saveRandomOrderSetting(value) {
-      localStorage.setItem('randomOrder', value ? 'true' : 'false');
-    }
-    function loadAutoNextSetting() {
-      const setting = localStorage.getItem('autoNext');
-      return setting === 'true'; 
-    }
-    function saveAutoNextSetting(value) {
-      localStorage.setItem('autoNext', value ? 'true' : 'false');
-    }
-    function loadShowJapaneseSetting() {
-      const setting = localStorage.getItem('showJapanese');
-      return setting === 'true'; 
-    }
-    function saveShowJapaneseSetting(value) {
-      localStorage.setItem('showJapanese', value ? 'true' : 'false');
-    }
-
-    /********************************************
-     * 考试进度存储
-     ********************************************/
-    function loadCurrentExam() {
-      const exam = localStorage.getItem('currentExam');
-      return exam ? JSON.parse(exam) : null;
-    }
-    function saveCurrentExam() {
-      const currentExam = {
-        sheetName: currentSheetName,
-        currentQuestionIndex,
-        userAnswers,
-        questions,
-        randomOrder,
-        autoNext,
-        elapsedTime,
-        isBattleMode,
-        isMistakeMode,
-        isFavoritesMode,
-        showJapanese
-      };
-      localStorage.setItem('currentExam', JSON.stringify(currentExam));
-    }
-    function clearCurrentExam() {
-      localStorage.removeItem('currentExam');
-      document.getElementById('continue-exam-btn').style.display = 'none';
-    }
-
-    /********************************************
-     * 收藏题库
-     ********************************************/
-    function loadFavorites() {
-      const fav = localStorage.getItem('favorites');
-      return fav ? JSON.parse(fav) : {};
-    }
-    function saveFavorites(obj) {
-      localStorage.setItem('favorites', JSON.stringify(obj));
-    }
-
-    /********************************************
-     * IP & 地理位置
-     ********************************************/
-    async function getClientIPAndLogAccess() {
-      const visitTime = new Date().toLocaleString();
-      const deviceInfo = navigator.userAgent;
-      let ip = "未知IP";
-      try {
-        const res = await fetch('https://api.ipify.org?format=json');
-        const data = await res.json();
-        ip = data.ip || "未知IP";
-      } catch(e) {
-        console.warn("获取IP失败:", e);
-      }
-      
-      // 地理位置信息
-      try {
-        const geoRes = await fetch(`https://ipapi.co/${ip}/json/`);
-        const geoData = await geoRes.json();
-        if(geoData && geoData.city && geoData.country_name) {
-          userLocation = `${geoData.city}, ${geoData.country_name}`;
+    async function fetchCategoriesData(){
+      try{
+        // A:G -> A=内部名称, B=语言, C=类别, D=对外展示Sheet名, E=spreadId, F=apiKey, G=内部配对码
+        const url= `https://sheets.googleapis.com/v4/spreadsheets/${SYSTEM_SPREADSHEET_ID}/values/考题管理!A:G?key=${SYSTEM_API_KEY}`;
+        const r= await fetch(url);
+        if(!r.ok){
+          throw new Error("fetchCategoriesData request failed");
         }
-      } catch(e) {
-        console.warn("获取地理位置信息失败:", e);
-      }
-
-      logs.push({
-        type: 'access',
-        time: visitTime,
-        location: userLocation,
-        detail: {
-          device: deviceInfo,
-          ip: ip
+        const dat= await r.json();
+        if(!dat.values || dat.values.length<2) {
+          throw new Error("考题管理Sheet数据为空");
         }
-      });
-    }
-
-    /********************************************
-     * 错题集
-     ********************************************/
-    function loadMistakesFromCache() {
-      const mistakes = localStorage.getItem('mistakes');
-      return mistakes ? JSON.parse(mistakes) : {};
-    }
-    function saveMistakesToCache(mistakesObj) {
-      localStorage.setItem('mistakes', JSON.stringify(mistakesObj));
-    }
-
-    /********************************************
-     * 做题历史
-     ********************************************/
-    function loadQuizHistory() {
-      const history = localStorage.getItem('quizHistory');
-      return history ? JSON.parse(history) : [];
-    }
-    function saveQuizHistory(history) {
-      localStorage.setItem('quizHistory', JSON.stringify(history));
-    }
-
-    /********************************************
-     * 获取 Sheet 列表
-     ********************************************/
-    async function fetchSheetNamesFromBothLibraries() {
-      sheetList = []; 
-      const selectionContainer = document.getElementById('sheet-selection');
-      selectionContainer.innerHTML = "加载中...";
-
-      try {
-        const oldSheets = await fetchSheetNamesCore(spreadsheetId, apiKey, "old");
-        const newSheets = await fetchSheetNamesCore(newSpreadsheetId, newApiKey, "new");
-
-        sheetList = [...oldSheets, ...newSheets];
-        if(sheetList.length === 0) {
-          selectionContainer.innerHTML = "<p>未找到任何套题。</p>";
-          return;
-        }
-        displaySheetSelection();
-        populateBattleModeSelection();
-      } catch(e) {
-        console.error(e);
-        selectionContainer.innerHTML = "<p>加载套题失败</p>";
-      }
-    }
-    async function fetchSheetNamesCore(spreadId, key, type) {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadId}?key=${key}`;
-      const response = await fetch(url);
-      if(!response.ok) {
-        console.warn("获取Sheet信息失败:", type);
-        return [];
-      }
-      const data = await response.json();
-      if(!data.sheets) return [];
-      return data.sheets.map(sheet => {
-        return {
-          name: sheet.properties.title,
-          from: type
-        };
-      });
-    }
-
-    /********************************************
-     * 显示套题按钮 & 大乱斗选择
-     ********************************************/
-    function displaySheetSelection() {
-      const selectionContainer = document.getElementById('sheet-selection');
-      selectionContainer.innerHTML = "";
-      sheetList.forEach(item => {
-        const button = document.createElement('button');
-        button.textContent = item.name;
-        button.onclick = () => fetchQuestions(item.name, item.from);
-        selectionContainer.appendChild(button);
-      });
-      assignSheetButtonColors();
-    }
-    function populateBattleModeSelection() {
-      const battleSelectionContainer = document.getElementById('battle-sheet-selection');
-      battleSelectionContainer.innerHTML = "";
-      sheetList.forEach(item => {
-        const div = document.createElement('div');
-        div.classList.add('sheet-option');
-        div.innerHTML = `
-          <label>
-            <input type="checkbox" value="${item.name}||${item.from}"> ${item.name}
-          </label>
-        `;
-        battleSelectionContainer.appendChild(div);
-      });
-    }
-
-    /********************************************
-     * 读取历史, 给套题按钮动态上色
-     ********************************************/
-    function assignSheetButtonColors() {
-      const history = loadQuizHistory();
-      sheetList.forEach(sheetObj => {
-        const sheet = sheetObj.name;
-        const sheetHistory = history.filter(entry => entry.sheetName === sheet);
-        const totalAttempts = sheetHistory.length;
-        const totalWrong = sheetHistory.reduce((sum, entry) => sum + entry.wrongCount, 0);
-        const averageWrong = totalAttempts > 0 ? (totalWrong / totalAttempts) : 0;
-
-        let color = '#28a745';
-        if (averageWrong >= 5) {
-          color = '#dc3545';
-        } else if (averageWrong >= 1) {
-          color = '#ffc107';
-        }
-        if (totalAttempts <= 2) {
-          color = '#007bff';
-        }
-
-        const btn = Array.from(document.querySelectorAll('#sheet-selection button'))
-          .find(b => b.textContent === sheet);
-        if(btn) {
-          btn.style.backgroundColor = color;
-        }
-      });
-    }
-
-    /********************************************
-     * 获取题目：如勾选“显示日语”，则并行获取日语
-     ********************************************/
-    async function fetchQuestions(sheetName, from) {
-      const sheetNameElem = document.getElementById('sheet-name');
-      const questionElem = document.getElementById('question');
-      sheetNameElem.textContent = "加载中...";
-      questionElem.textContent = "加载中...";
-
-      try {
-        let baseUrl = "";
-        if(from === "old") {
-          baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${apiKey}`;
-        } else {
-          baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${newSpreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${newApiKey}`;
-        }
-        const response = await fetch(baseUrl);
-        if(!response.ok) {
-          sheetNameElem.textContent = `加载套题[${sheetName}]失败`;
-          questionElem.textContent = "";
-          return;
-        }
-        const data = await response.json();
-        if(!data.values || data.values.length < 1) {
-          sheetNameElem.textContent = `套题[${sheetName}]数据为空`;
-          questionElem.textContent = "";
-          return;
-        }
-
-        let baseQuestions = processSheetData(data.values, from);
-
-        // 若显示日语
-        if(showJapanese) {
-          const jpUrl = `https://sheets.googleapis.com/v4/spreadsheets/${jpSpreadsheetId}/values/${encodeURIComponent(sheetName)}?key=${jpApiKey}`;
-          const jpRes = await fetch(jpUrl);
-          if(jpRes.ok) {
-            const jpData = await jpRes.json();
-            if(jpData.values && jpData.values.length>0) {
-              const jpQuestions = processSheetData(jpData.values, from, true);
-              // 按行合并
-              baseQuestions.forEach((q, idx) => {
-                if(jpQuestions[idx]) {
-                  q.jpQuestion = jpQuestions[idx].question;
-                  q.jpExplanation = jpQuestions[idx].explanation;
-                }
-              });
-            }
-          }
-        }
-
-        currentSheetName = sheetName;
-        isBattleMode = false;
-        isMistakeMode = false;
-        isFavoritesMode = false;
-        questions = randomOrder ? shuffle(baseQuestions) : baseQuestions;
-        startQuiz();
-      } catch(e) {
-        console.error(e);
-        sheetNameElem.textContent = `加载套题[${sheetName}]异常`;
-        questionElem.textContent = "";
-      }
-    }
-
-    /********************************************
-     * 将表格行映射到题目对象，增加 rowIndex
-     ********************************************/
-    function processSheetData(values, from, isJP=false) {
-      // old: question=row[1], image=row[2], explanation=row[7], answer=row[8]('o'/'x')
-      // new: question=row[0], image=row[1], explanation=row[3], answer=row[2]('o'/'x')
-      // rowIndex: idx
-      return values.map((row, idx) => {
-        if(from==="old") {
-          const qText = row[1] ? row[1].replace(/\u200B/g, '').trim() : "";
-          const qImage = row[2] ? row[2].trim() : "";
-          const qExplanation = row[7] ? row[7].trim() : "";
-          const ans = (row[8] === 'o' || row[8] === 'o ') ? '⭕' : '❌';
+        const rows = dat.values.slice(1);
+        categoriesData = rows.map(row=>{
           return {
-            rowIndex: idx,
-            question: qText || (isJP? "": "无题目"),
-            image: qImage,
-            answer: ans,
-            explanation: qExplanation || "",
-            sheetSource: from
+            internalName: (row[0]||"").trim(),   // A
+            lang: (row[1]||"").trim(),          // B
+            categoryName: (row[2]||"").trim(),  // C
+            sheetName: (row[3]||"").trim(),     // D (对外展示Sheet名)
+            spreadId: (row[4]||"").trim(),      // E
+            apiKey: (row[5]||"").trim(),        // F
+            internalCode: (row[6]||"").trim()   // G
           };
-        } else {
-          const qText = row[0] ? row[0].replace(/\u200B/g, '').trim() : "";
-          const qImage = row[1] ? row[1].trim() : "";
-          const qExplanation = row[3] ? row[3].trim() : "";
-          const ans = (row[2] === 'o' || row[2] === 'o ') ? '⭕' : '❌';
-          return {
-            rowIndex: idx,
-            question: qText || (isJP? "": "无题目"),
-            image: qImage,
-            answer: ans,
-            explanation: qExplanation || "",
-            sheetSource: from
-          };
-        }
-      }).filter(q => isJP || q.question !== "无题目");
-    }
-
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random()*(i+1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
-
-    /********************************************
-     * 开始考试
-     ********************************************/
-    function startQuiz() {
-      currentQuestionIndex = 0;
-      userAnswers = [];
-      answerVisible = false;
-      mistakeQuestions = [];
-      elapsedTime = 0;
-      clearCurrentExam();
-      document.getElementById('container').style.display = 'none';
-      document.getElementById('quiz-container').style.display = 'block';
-      document.getElementById('sheet-name').textContent = `当前套题：${currentSheetName}`;
-      loadQuestion();
-      startTimer();
-    }
-    function startQuizFromState() {
-      document.getElementById('container').style.display = 'none';
-      document.getElementById('quiz-container').style.display = 'block';
-      document.getElementById('sheet-name').textContent = `当前套题：${currentSheetName}`;
-      loadQuestion();
-      startTimer();
-    }
-
-    /********************************************
-     * 载入单个题
-     ********************************************/
-    function loadQuestion() {
-      const q = questions[currentQuestionIndex];
-      const questionElem = document.getElementById('question');
-      const imageContainer = document.getElementById('image');
-      const favoriteBtn = document.getElementById('favorite-btn');
-
-      imageContainer.style.display = 'none';
-      imageContainer.innerHTML = '';
-      document.getElementById('answer-display').textContent = '';
-
-      setTimeout(() => {
-        let textToShow = q.question || "";
-        if(showJapanese && q.jpQuestion) {
-          textToShow += "\n-----\n" + q.jpQuestion;
-        }
-        questionElem.textContent = textToShow;
-
-        resetButtonHighlight();
-        const ans = userAnswers[currentQuestionIndex];
-        if(ans==="⭕") document.getElementById('btn-correct').classList.add('highlight');
-        if(ans==="❌") document.getElementById('btn-wrong').classList.add('highlight');
-
-        const remaining = questions.length - currentQuestionIndex -1;
-        document.getElementById('remaining-questions').textContent = `剩余题数：${remaining}`;
-
-        // 收藏
-        favoriteBtn.classList.remove('favorited');
-        const favKey = getFavoriteKey(q);
-        if(favorites[favKey]) {
-          favoriteBtn.classList.add('favorited');
-        }
-      }, 0);
-
-      if(q.image) {
-        imageContainer.style.display='flex';
-        imageContainer.textContent = "加载中...";
-        const img = new Image();
-        img.src = q.image;
-        img.onload = () => {
-          imageContainer.innerHTML = '';
-          imageContainer.appendChild(img);
-        };
-        img.onerror = () => {
-          imageContainer.innerHTML = '';
-          imageContainer.style.display='none';
-        };
-      }
-
-      saveCurrentExam();
-    }
-
-    function resetButtonHighlight() {
-      document.getElementById('btn-correct').classList.remove('highlight');
-      document.getElementById('btn-wrong').classList.remove('highlight');
-    }
-
-    function selectAnswer(ans) {
-      userAnswers[currentQuestionIndex] = ans;
-      resetButtonHighlight();
-      if(ans==="⭕") document.getElementById('btn-correct').classList.add('highlight');
-      if(ans==="❌") document.getElementById('btn-wrong').classList.add('highlight');
-      saveCurrentExam();
-
-      if(autoNext) {
-        setTimeout(() => {
-          if(currentQuestionIndex < questions.length-1) {
-            currentQuestionIndex++;
-            loadQuestion();
-          } else {
-            alert("已到最后一题，请交卷");
-          }
-        }, 300);
-        if(currentQuestionIndex === questions.length-1) {
-          setTimeout(() => {
-            submitQuiz();
-          }, 500);
-        }
-      }
-    }
-
-    function toggleAnswer() {
-      const q = questions[currentQuestionIndex];
-      const answerDisplay = document.getElementById('answer-display');
-      if(answerVisible) {
-        answerDisplay.textContent = "";
-      } else {
-        let text = `正确答案：${q.answer}`;
-        if(q.explanation) {
-          text += `\n解说：${q.explanation}`;
-        }
-        if(showJapanese && q.jpExplanation) {
-          text += `\n-----\n【日文解说】\n${q.jpExplanation}`;
-        }
-        answerDisplay.textContent = text;
-      }
-      answerVisible = !answerVisible;
-    }
-
-    function nextQuestion() {
-      if(currentQuestionIndex < questions.length-1) {
-        currentQuestionIndex++;
-        loadQuestion();
-      } else {
-        alert("已到最后一题");
-      }
-    }
-    function previousQuestion() {
-      if(currentQuestionIndex>0) {
-        currentQuestionIndex--;
-        loadQuestion();
-      }
-    }
-
-    function getFavoriteKey(q) {
-      return q.rowIndex + '||' + q.question + '||' + q.answer + '||' + (q.image || '') + '||' + (q.explanation||'') + '||' + (q.sheetSource||'') + '||' + currentSheetName;
-    }
-    function toggleFavorite() {
-      const q = questions[currentQuestionIndex];
-      const favKey = getFavoriteKey(q);
-      const btn = document.getElementById('favorite-btn');
-      if(favorites[favKey]) {
-        delete favorites[favKey];
-        btn.classList.remove('favorited');
-      } else {
-        favorites[favKey] = {
-          rowIndex: q.rowIndex,
-          question: q.question,
-          image: q.image,
-          answer: q.answer,
-          explanation: q.explanation,
-          sheetName: currentSheetName,
-          sheetSource: q.sheetSource
-        };
-        if(q.jpQuestion) favorites[favKey].jpQuestion = q.jpQuestion;
-        if(q.jpExplanation) favorites[favKey].jpExplanation = q.jpExplanation;
-        btn.classList.add('favorited');
-      }
-      saveFavorites(favorites);
-    }
-
-    /********************************************
-     * 交卷
-     ********************************************/
-    function submitQuiz() {
-      if(!allQuestionsAnswered()) {
-        if(!confirm("还有未作答题目，确定交卷吗？")) return;
-      }
-      stopTimer();
-      quizEndTime = new Date();
-      const timeSpentMs = quizEndTime - quizStartTime + elapsedTime;
-      const minutes = Math.floor(timeSpentMs/60000);
-      const seconds = Math.floor((timeSpentMs%60000)/1000);
-      const timeSpentFormatted = `${minutes}分钟${seconds}秒`;
-
-      let incorrectCount=0, correctCount=0, unansweredCount=0;
-      let mistakesObj = loadMistakesFromCache();
-      mistakeQuestions = [];
-
-      const total = questions.length;
-      let totalScore=0, scorePer=100/total;
-      questions.forEach((q,i)=>{
-        const ans = userAnswers[i];
-        if(!ans) {
-          unansweredCount++;
-        } else if(ans===q.answer) {
-          correctCount++;
-          totalScore+=scorePer;
-        } else {
-          incorrectCount++;
-          const key = `${q.sheetSource}||${q.rowIndex}||${currentSheetName}`;
-          if(mistakesObj[key]) {
-            mistakesObj[key].count++;
-            mistakesObj[key].userAnswer=ans;
-          } else {
-            mistakesObj[key] = {
-              rowIndex: q.rowIndex,
-              question: q.question,
-              image: q.image,
-              answer: q.answer,
-              explanation: q.explanation,
-              jpQuestion: q.jpQuestion || "",
-              jpExplanation: q.jpExplanation || "",
-              count:1,
-              userAnswer: ans,
-              sheetName: currentSheetName,
-              sheetSource: q.sheetSource
-            };
-          }
-          mistakeQuestions.push({
-            ...q, 
-            userAnswer: ans,
-            sheetName: currentSheetName
-          });
-        }
-      });
-      totalScore = Math.floor(totalScore);
-      if(totalScore>100) totalScore=100;
-
-      saveMistakesToCache(mistakesObj);
-      clearCurrentExam();
-
-      let scoreMessage="", scoreClass="";
-      if(totalScore===100) {
-        scoreMessage="满分！非常棒！";
-        scoreClass="score-excellent";
-      } else if(totalScore>=90) {
-        scoreMessage="合格！继续加油！";
-        scoreClass="score-good";
-      } else {
-        scoreMessage="不合格，请继续努力！";
-        scoreClass="score-bad";
-      }
-
-      const answeredNum = correctCount + incorrectCount;
-      const percent = Math.floor(answeredNum/total*100);
-      const progressBar = document.getElementById('progress-bar');
-      progressBar.style.width = percent+'%';
-      progressBar.textContent = percent+'%';
-      progressBar.style.backgroundColor = 
-        percent>=90? '#28a745':
-        percent>=70? '#ffc107': '#dc3545';
-
-      document.getElementById('quiz-container').style.display='none';
-      document.getElementById('result-container').style.display='block';
-      document.getElementById('score').textContent = `得分：${totalScore}分 - ${scoreMessage}`;
-      document.getElementById('score').className = scoreClass;
-      document.getElementById('mistake-count').textContent = `做错：${incorrectCount}道`;
-      document.getElementById('correct-count').textContent = `做对：${correctCount}道`;
-      document.getElementById('unanswered-count').textContent = `未做：${unansweredCount}道`;
-      document.getElementById('completion-status').textContent = `完成度：${answeredNum}/${total}`;
-
-      const history = loadQuizHistory();
-      history.push({
-        dateTime: new Date().toLocaleString(),
-        sheetName: currentSheetName,
-        wrongCount: incorrectCount,
-        correctCount,
-        unansweredCount,
-        timeSpent: timeSpentFormatted,
-        answered: answeredNum,
-        total,
-        score: totalScore
-      });
-      saveQuizHistory(history);
-
-      logs.push({
-        type: 'quiz',
-        time: new Date().toLocaleString(),
-        location: userLocation,
-        detail: {
-          sheetName: currentSheetName,
-          wrongCount: incorrectCount,
-          correctCount,
-          unansweredCount,
-          timeSpent: timeSpentFormatted,
-          answered: answeredNum,
-          total,
-          score: totalScore
-        }
-      });
-    }
-    function allQuestionsAnswered() {
-      return questions.every((q,i)=> userAnswers[i]==='⭕' || userAnswers[i]==='❌');
-    }
-
-    /********************************************
-     * 暂停 & 重置
-     ********************************************/
-    function pauseExam() {
-      stopTimer();
-      elapsedTime += (new Date()) - quizStartTime;
-      saveCurrentExam();
-      alert("考试进度已保存！");
-      document.getElementById('quiz-container').style.display='none';
-      document.getElementById('container').style.display='block';
-      if(loadCurrentExam()) {
-        document.getElementById('continue-exam-btn').style.display='inline-block';
-      }
-    }
-    function resetQuiz() {
-      stopTimer();
-      document.getElementById('quiz-container').style.display='none';
-      document.getElementById('result-container').style.display='none';
-      document.getElementById('container').style.display='block';
-      document.getElementById('mistake-review-container').style.display='none';
-      document.getElementById('current-mistakes-container').style.display='none';
-      document.getElementById('console-logs-container').style.display='none';
-      document.getElementById('update-logs-container').style.display='none';
-      document.getElementById('function-intro-container').style.display='none';
-      document.getElementById('summary-container').style.display='none';
-      document.getElementById('favorites-container').style.display='none';
-      isBattleMode=false;
-      isMistakeMode=false;
-      isFavoritesMode=false;
-      fetchSheetNamesFromBothLibraries();
-      if(loadCurrentExam()) {
-        document.getElementById('continue-exam-btn').style.display='inline-block';
-      } else {
-        document.getElementById('continue-exam-btn').style.display='none';
-      }
-    }
-
-    /********************************************
-     * 查看本次错题
-     ********************************************/
-    function viewMistakes() {
-      document.getElementById('result-container').style.display='none';
-      document.getElementById('current-mistakes-container').style.display='block';
-      const listDiv = document.getElementById('current-mistakes-list');
-      listDiv.innerHTML = '';
-
-      if(mistakeQuestions.length===0) {
-        listDiv.innerHTML="<p>本次没有错题</p>";
-        return;
-      }
-      mistakeQuestions.forEach((item,idx)=>{
-        const wrapDiv = document.createElement('div');
-        let qText = item.question;
-        if(showJapanese && item.jpQuestion) {
-          qText += "\n-----\n" + item.jpQuestion;
-        }
-        let infoHTML = `
-          <div><strong>题目 ${idx+1}：</strong>${qText}</div>
-        `;
-        if(item.image) {
-          infoHTML += `<div><img src="${item.image}" style="max-width:100%;max-height:150px;object-fit:contain;margin-top:10px;"></div>`;
-        }
-        infoHTML += `<div><strong>您的错误答案：</strong>${item.userAnswer}</div>
-                     <div><strong>正确答案：</strong>${item.answer}</div>`;
-        let exText = item.explanation;
-        if(showJapanese && item.jpExplanation) {
-          exText += `\n-----\n【日文解说】\n${item.jpExplanation}`;
-        }
-        if(exText) {
-          infoHTML += `<div><strong>解说：</strong>${exText}</div>`;
-        }
-        wrapDiv.innerHTML = infoHTML;
-        listDiv.appendChild(wrapDiv);
-      });
-    }
-
-    /********************************************
-     * 错题复习（重新组卷）
-     ********************************************/
-    async function startMistakeQuiz() {
-      let mistakesObj = loadMistakesFromCache();
-      const keys = Object.keys(mistakesObj);
-      if(keys.length===0) {
-        alert("没有错题记录");
-        return;
-      }
-      isMistakeMode=true; isBattleMode=false; isFavoritesMode=false;
-      currentSheetName = "错题集";
-      // 可能来自多个sheet，因此需按 (sheetName, sheetSource) 分组，去抓原表
-      const groups = {};
-      keys.forEach(k=>{
-        const item = mistakesObj[k];
-        const groupKey = item.sheetName+"||"+item.sheetSource;
-        if(!groups[groupKey]) groups[groupKey]=[];
-        groups[groupKey].push(item);
-      });
-
-      let allQs = [];
-      for(const gKey in groups) {
-        const [shName, src] = gKey.split("||");
-        // 先获取原表
-        let baseUrl="";
-        if(src==="old") {
-          baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(shName)}?key=${apiKey}`;
-        } else {
-          baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${newSpreadsheetId}/values/${encodeURIComponent(shName)}?key=${newApiKey}`;
-        }
-        let baseQArr=[];
-        try {
-          const r = await fetch(baseUrl);
-          if(r.ok) {
-            const dat = await r.json();
-            if(dat.values && dat.values.length>0) {
-              baseQArr = processSheetData(dat.values, src);
-            }
-          }
-        } catch(e){}
-        // 若需要日语
-        if(showJapanese) {
-          try {
-            const jpUrl = `https://sheets.googleapis.com/v4/spreadsheets/${jpSpreadsheetId}/values/${encodeURIComponent(shName)}?key=${jpApiKey}`;
-            const jpR = await fetch(jpUrl);
-            if(jpR.ok) {
-              const jpDat = await jpR.json();
-              if(jpDat.values && jpDat.values.length>0) {
-                const jpArr = processSheetData(jpDat.values, src, true);
-                baseQArr.forEach((q,idx)=>{
-                  if(jpArr[idx]) {
-                    q.jpQuestion = jpArr[idx].question;
-                    q.jpExplanation = jpArr[idx].explanation;
-                  }
-                });
-              }
-            }
-          } catch(e){}
-        }
-        // 将错题对象与baseQArr[rowIndex]匹配
-        groups[gKey].forEach(mItem=>{
-          const rowIdx = mItem.rowIndex;
-          let found = baseQArr[rowIdx];
-          if(found) {
-            // 合并
-            let newQ = {
-              rowIndex: found.rowIndex,
-              question: found.question,
-              image: found.image,
-              answer: found.answer,
-              explanation: found.explanation,
-              jpQuestion: found.jpQuestion || "",
-              jpExplanation: found.jpExplanation || "",
-              userAnswer: mItem.userAnswer || "",
-              sheetName: mItem.sheetName,
-              sheetSource: found.sheetSource
-            };
-            allQs.push(newQ);
-          } else {
-            // fallback, 无法找到
-            allQs.push({
-              ...mItem
-            });
-          }
         });
+        logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetchCategoriesData success', count:categoriesData.length}});
+      }catch(e){
+        console.error(e);
+        logs.push({type:'error', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetchCategoriesData error', error:e}});
+        document.getElementById('category-selection').innerHTML="<p>加载类别异常</p>";
       }
-      if(allQs.length===0) {
-        alert("错题数据为空");
+    }
+
+    /********************************************
+     *  2) 渲染类别按钮
+     ********************************************/
+    function renderCategoryButtons(){
+      let mapCat={}; 
+      // 把 lang=CN 的条目根据 categoryName 分组
+      categoriesData.forEach(item=>{
+        if(item.lang==="CN"){
+          if(!mapCat[item.categoryName]){
+            mapCat[item.categoryName]=[];
+          }
+          mapCat[item.categoryName].push(item);
+        }
+      });
+
+      // 将大乱斗、我的收藏、错题复习 做为附加按钮
+      let finalArr = Object.keys(mapCat).map(k=>{
+        return {
+          internalName: k,
+          displayName: k,
+          sheetList: mapCat[k]
+        };
+      });
+      finalArr.push({internalName:"battleMode", displayName:"大乱斗", sheetList:[]});
+      finalArr.push({internalName:"favoritesMode", displayName:"我的收藏", sheetList:[]});
+      finalArr.push({internalName:"mistakeMode", displayName:"错题复习", sheetList:[]});
+
+      const cont = document.getElementById('category-selection');
+      cont.innerHTML="";
+      finalArr.forEach(cat=>{
+        const btn = document.createElement('button');
+        btn.textContent= cat.displayName;
+        if(cat.internalName==="battleMode") {
+          btn.style.backgroundColor="#6f42c1";
+        } else if(cat.internalName==="favoritesMode") {
+          btn.style.backgroundColor="#f0ad4e";
+        } else if(cat.internalName==="mistakeMode") {
+          btn.style.backgroundColor="#dc3545";
+        } else {
+          btn.style.backgroundColor="#007BFF";
+        }
+        btn.onclick=()=> onCategoryClick(cat);
+        cont.appendChild(btn);
+      });
+    }
+
+    function onCategoryClick(cat){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'onCategoryClick', cat}});
+      if(cat.internalName==="battleMode"){
+        openBattleModeSelection();
         return;
       }
-      questions = randomOrder? shuffle(allQs): allQs;
+      if(cat.internalName==="favoritesMode"){
+        showFavorites();
+        return;
+      }
+      if(cat.internalName==="mistakeMode"){
+        startMistakeQuiz();
+        return;
+      }
+      // 普通类别 => 显示套题按钮
+      showSheetButtons(cat.sheetList);
+    }
+
+    function showSheetButtons(sheetArr){
+      const cont = document.getElementById('category-selection');
+      cont.innerHTML="";
+      if(!sheetArr || sheetArr.length===0){
+        cont.innerHTML="<p>该类别暂无套题</p>";
+        return;
+      }
+      sheetArr.forEach(sobj=>{
+        const btn = document.createElement('button');
+        // D 列 => sheetName
+        btn.textContent= sobj.sheetName||"[无标题]";
+        btn.style.backgroundColor="#17a2b8";
+        btn.onclick=()=>{
+          logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'click sub-sheet', sheetName:sobj.sheetName}});
+          // fetch CN -> sobj.spreadId + sobj.sheetName
+          fetchQuestionsCN(sobj);
+        };
+        cont.appendChild(btn);
+      });
+
+      // 返回上一级
+      const backBtn= document.createElement('button');
+      backBtn.textContent="返回上一级";
+      backBtn.style.backgroundColor="#aaa";
+      backBtn.onclick= renderCategoryButtons;
+      cont.appendChild(backBtn);
+    }
+
+    /********************************************
+     *  3) 动态获取题目 (CN + 日语合并)
+     ********************************************/
+    async function fetchQuestionsCN(sobj){
+      // sobj => { internalName, lang, categoryName, sheetName, spreadId, apiKey, internalCode }
+      try{
+        document.getElementById('sheet-name').textContent="加载中...";
+        document.getElementById('question').textContent="加载中...";
+        let urlCN= `https://sheets.googleapis.com/v4/spreadsheets/${sobj.spreadId}/values/${encodeURIComponent(sobj.sheetName)}?key=${sobj.apiKey}`;
+        logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetchQuestionsCN - start', urlCN}});
+        
+        let resp= await fetch(urlCN);
+        if(!resp.ok){
+          throw new Error("fetch CN question failed: " + sobj.sheetName);
+        }
+        let d= await resp.json();
+        if(!d.values || d.values.length<1){
+          throw new Error("fetch CN question empty: " + sobj.sheetName);
+        }
+        let cnQuestions = processSheetData(d.values);
+
+        // 若显示日语 => 找到 lang="JP" && internalCode与这个 sobj.internalCode 一致的那一条
+        if(showJapanese){
+          let jpItem= categoriesData.find(x=> x.lang==="JP" && x.internalCode=== sobj.internalCode);
+          if(jpItem){
+            try{
+              let urlJP= `https://sheets.googleapis.com/v4/spreadsheets/${jpItem.spreadId}/values/${encodeURIComponent(jpItem.sheetName)}?key=${jpItem.apiKey}`;
+              logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetchQuestionsJP - start', urlJP}});
+              let jr= await fetch(urlJP);
+              if(jr.ok){
+                let jd= await jr.json();
+                if(jd.values && jd.values.length>0){
+                  let jpArr= processSheetData(jd.values, true);
+                  logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'JP row count', cnCount:cnQuestions.length, jpCount:jpArr.length}});
+                  // 合并JP
+                  cnQuestions.forEach((q, idx)=>{
+                    if(jpArr[idx]){
+                      q.jpQuestion= jpArr[idx].question;
+                      q.jpExplanation= jpArr[idx].explanation;
+                    }
+                  });
+                } else {
+                  logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'No JP rows found in sheet', sheet:jpItem.sheetName}});
+                }
+              } else {
+                logs.push({type:'error', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch JP request not ok', sheetName:jpItem.sheetName}});
+              }
+            }catch(e2){
+              logs.push({type:'error', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetchQuestionsJP exception', error:e2}});
+            }
+          } else {
+            logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'no JP item found for internalCode', code:sobj.internalCode}});
+          }
+        }
+
+        currentSheetName= sobj.sheetName; // 显示用(中文套题名称)
+        questions= randomOrder ? shuffle(cnQuestions) : cnQuestions;
+        isBattleMode=false; isMistakeMode=false; isFavoritesMode=false;
+
+        // 在题目中保存后续要用的信息
+        questions.forEach(q=>{
+          q.spreadId= sobj.spreadId;
+          q.apiKey= sobj.apiKey;
+          q.sheetName= sobj.sheetName;       // CN对外名
+          q.internalCode= sobj.internalCode; // 用于中日匹配
+        });
+
+        startQuiz();
+      }catch(e){
+        console.error(e);
+        logs.push({type:'error', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetchQuestionsCN exception', error:e}});
+        document.getElementById('sheet-name').textContent=`加载套题[${sobj.sheetName}]失败`;
+        document.getElementById('question').textContent="";
+      }
+    }
+
+    function processSheetData(values, isJP=false){
+      // 假设表格4列： [题目, 图片, 答案(o/x), 解说]
+      return values.map((row, idx)=>{
+        let q = (row[0]||"").trim().replace(/\u200B/g,'');
+        let img= (row[1]||"").trim();
+        let ans= ((row[2]||"").trim().toLowerCase()==='o') ? '⭕':'❌';
+        let exp= (row[3]||"").trim();
+        return {
+          rowIndex: idx,
+          question: isJP ? (q||"") : (q||"无题目"),
+          image: img,
+          answer: ans,
+          explanation: exp
+        };
+      }).filter(q=> isJP || q.question!=="无题目");
+    }
+
+    function shuffle(arr){
+      for(let i=arr.length-1; i>0; i--){
+        let j= Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]]=[arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    /********************************************
+     * 4) 开始考试
+     ********************************************/
+    function startQuiz(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'startQuiz', total:questions.length, sheetName:currentSheetName}});
       currentQuestionIndex=0;
       userAnswers=[];
       answerVisible=false;
@@ -1533,113 +925,267 @@
 
       document.getElementById('container').style.display='none';
       document.getElementById('quiz-container').style.display='block';
-      document.getElementById('sheet-name').textContent=`错题单元测试`;
+      document.getElementById('sheet-name').textContent=`当前套题：${currentSheetName}`;
       loadQuestion();
       startTimer();
     }
 
+    function loadQuestion(){
+      const q= questions[currentQuestionIndex];
+      const questionElem= document.getElementById('question');
+      const imageContainer= document.getElementById('image');
+      const favoriteBtn= document.getElementById('favorite-btn');
+      document.getElementById('answer-display').textContent="";
+
+      if(!q) return;
+      let text= q.question;
+      if(showJapanese && q.jpQuestion){
+        text+= "\n-----\n"+ q.jpQuestion;
+      }
+      questionElem.textContent= text;
+
+      // 图片
+      imageContainer.style.display='none';
+      imageContainer.innerHTML="";
+      if(q.image){
+        imageContainer.style.display='flex';
+        imageContainer.textContent="加载中...";
+        let img= new Image();
+        img.src= q.image;
+        img.onload=()=>{
+          imageContainer.innerHTML="";
+          imageContainer.appendChild(img);
+        };
+        img.onerror=()=>{
+          imageContainer.style.display='none';
+          imageContainer.innerHTML="";
+        };
+      }
+
+      // 高亮已选
+      resetButtonHighlight();
+      let ans= userAnswers[currentQuestionIndex];
+      if(ans==="⭕") document.getElementById('btn-correct').classList.add('highlight');
+      if(ans==="❌") document.getElementById('btn-wrong').classList.add('highlight');
+
+      // 剩余题数
+      document.getElementById('remaining-questions').textContent=`剩余题数：${questions.length - currentQuestionIndex -1}`;
+
+      // 收藏状态
+      favoriteBtn.classList.remove('favorited');
+      let favKey= getFavoriteKey(q);
+      if(favorites[favKey]){
+        favoriteBtn.classList.add('favorited');
+      }
+
+      saveCurrentExam();
+    }
+    function resetButtonHighlight(){
+      document.getElementById('btn-correct').classList.remove('highlight');
+      document.getElementById('btn-wrong').classList.remove('highlight');
+    }
+    function selectAnswer(ans){
+      userAnswers[currentQuestionIndex]= ans;
+      resetButtonHighlight();
+      if(ans==="⭕") document.getElementById('btn-correct').classList.add('highlight');
+      if(ans==="❌") document.getElementById('btn-wrong').classList.add('highlight');
+
+      saveCurrentExam();
+
+      if(autoNext){
+        setTimeout(()=>{
+          if(currentQuestionIndex<questions.length-1){
+            currentQuestionIndex++;
+            loadQuestion();
+          } else{
+            alert("已到最后一题，请交卷");
+          }
+        },300);
+        if(currentQuestionIndex===questions.length-1){
+          setTimeout(()=>{
+            submitQuiz();
+          },500);
+        }
+      }
+    }
+    function toggleAnswer(){
+      const q= questions[currentQuestionIndex];
+      if(!q) return;
+      const answerDisp= document.getElementById('answer-display');
+      if(answerVisible){
+        answerDisp.textContent="";
+      } else{
+        let txt= `正确答案：${q.answer}`;
+        if(q.explanation){
+          txt+= `\n解说：${q.explanation}`;
+        }
+        if(showJapanese && q.jpExplanation){
+          txt+= `\n-----\n【日文解说】\n${q.jpExplanation}`;
+        }
+        answerDisp.textContent= txt;
+      }
+      answerVisible=!answerVisible;
+    }
+    function nextQuestion(){
+      if(currentQuestionIndex<questions.length-1){
+        currentQuestionIndex++;
+        loadQuestion();
+      } else{
+        alert("已是最后一题");
+      }
+    }
+    function previousQuestion(){
+      if(currentQuestionIndex>0){
+        currentQuestionIndex--;
+        loadQuestion();
+      }
+    }
+
     /********************************************
-     * 我的收藏
+     * 5) 收藏
      ********************************************/
-    function showFavorites() {
-      document.getElementById('container').style.display='none';
-      document.getElementById('quiz-container').style.display='none';
-      document.getElementById('result-container').style.display='none';
-      document.getElementById('mistake-review-container').style.display='none';
-      document.getElementById('current-mistakes-container').style.display='none';
-      document.getElementById('console-logs-container').style.display='none';
-      document.getElementById('update-logs-container').style.display='none';
-      document.getElementById('function-intro-container').style.display='none';
-      document.getElementById('summary-container').style.display='none';
+    function getFavoriteKey(q){
+      // [spreadId, rowIndex, sheetName, question]
+      return [q.spreadId, q.rowIndex, q.sheetName, q.question].join("||");
+    }
+    function toggleFavorite(){
+      const q= questions[currentQuestionIndex];
+      let favKey= getFavoriteKey(q);
+      const btn= document.getElementById('favorite-btn');
+
+      if(favorites[favKey]){
+        // 取消收藏
+        delete favorites[favKey];
+        btn.classList.remove('favorited');
+        logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'remove favorite', favKey}});
+      } else {
+        // 收藏
+        favorites[favKey]={
+          rowIndex: q.rowIndex,
+          question: q.question,
+          image: q.image,
+          answer: q.answer,
+          explanation: q.explanation,
+          spreadId: q.spreadId,
+          apiKey: q.apiKey,
+          sheetName: q.sheetName,
+          internalCode: q.internalCode||"",
+          jpQuestion: q.jpQuestion||"",
+          jpExplanation: q.jpExplanation||""
+        };
+        btn.classList.add('favorited');
+        logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'add favorite', favKey}});
+      }
+      saveFavorites(favorites);
+    }
+
+    function showFavorites(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'showFavorites'}});
+      hideAll();
       document.getElementById('favorites-container').style.display='block';
     }
 
-    async function startFavoritesQuiz() {
-      const favKeys = Object.keys(favorites);
-      if(favKeys.length===0) {
+    async function startFavoritesQuiz(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'startFavoritesQuiz'}});
+      let favKeys= Object.keys(favorites);
+      if(favKeys.length===0){
         alert("暂无收藏题目");
         return;
       }
       isFavoritesMode=true; isBattleMode=false; isMistakeMode=false;
       currentSheetName="我的收藏";
 
-      // 同样可能来自多个sheet
-      const groups={};
+      // 根据 spreadId+sheetName 分组
+      let groupMap={};
       favKeys.forEach(k=>{
-        const item = favorites[k];
-        const groupKey = item.sheetName+"||"+item.sheetSource;
-        if(!groups[groupKey]) groups[groupKey]=[];
-        groups[groupKey].push(item);
+        let item= favorites[k];
+        let gk= item.spreadId+"||"+item.sheetName;
+        if(!groupMap[gk]) groupMap[gk]=[];
+        groupMap[gk].push(item);
       });
 
       let allFavs=[];
-      for(const gKey in groups) {
-        const [shName, src] = gKey.split("||");
-        let baseQArr=[];
-        let baseUrl="";
-        if(src==="old") {
-          baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(shName)}?key=${apiKey}`;
-        } else {
-          baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${newSpreadsheetId}/values/${encodeURIComponent(shName)}?key=${newApiKey}`;
+      for(const gk in groupMap){
+        const [spId, sName]= gk.split("||");
+        if(!spId || !sName){
+          logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'favorite missing spId or sName', gk}});
+          continue;
         }
-        try {
-          const r= await fetch(baseUrl);
-          if(r.ok) {
-            const dat=await r.json();
-            if(dat.values&&dat.values.length>0) {
-              baseQArr=processSheetData(dat.values, src);
+        let baseQArr=[];
+        try{
+          let baseUrl= `https://sheets.googleapis.com/v4/spreadsheets/${spId}/values/${encodeURIComponent(sName)}?key=${groupMap[gk][0].apiKey}`;
+          logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch favorites CN', baseUrl}});
+          let r= await fetch(baseUrl);
+          if(r.ok){
+            let d=await r.json();
+            if(d.values && d.values.length>0){
+              baseQArr= processSheetData(d.values);
             }
           }
-        } catch(e){}
+        }catch(e){
+          logs.push({type:'error', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch favorites CN error', error:e}});
+        }
 
-        if(showJapanese) {
-          try {
-            const jpUrl = `https://sheets.googleapis.com/v4/spreadsheets/${jpSpreadsheetId}/values/${encodeURIComponent(shName)}?key=${jpApiKey}`;
-            const jpR = await fetch(jpUrl);
-            if(jpR.ok) {
-              const jpDat=await jpR.json();
-              if(jpDat.values && jpDat.values.length>0) {
-                const jpArr= processSheetData(jpDat.values, src,true);
-                baseQArr.forEach((q,idx)=>{
-                  if(jpArr[idx]) {
-                    q.jpQuestion= jpArr[idx].question;
-                    q.jpExplanation= jpArr[idx].explanation;
+        // 若显示日语
+        if(showJapanese){
+          // 取 internalCode => 再在 categoriesData 找 JP 行
+          let internalCode= groupMap[gk][0].internalCode||"";
+          if(internalCode){
+            let jpRow= categoriesData.find(x=> x.lang==="JP" && x.internalCode=== internalCode && x.spreadId=== spId);
+            if(jpRow){
+              try{
+                let jpUrl= `https://sheets.googleapis.com/v4/spreadsheets/${jpRow.spreadId}/values/${encodeURIComponent(jpRow.sheetName)}?key=${jpRow.apiKey}`;
+                logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch favorites JP', jpUrl}});
+                let jr= await fetch(jpUrl);
+                if(jr.ok){
+                  let jd= await jr.json();
+                  if(jd.values && jd.values.length>0){
+                    let jpArr= processSheetData(jd.values,true);
+                    baseQArr.forEach((qq,idx)=>{
+                      if(jpArr[idx]){
+                        qq.jpQuestion= jpArr[idx].question;
+                        qq.jpExplanation= jpArr[idx].explanation;
+                      }
+                    });
                   }
-                });
+                }
+              }catch(e2){
+                logs.push({type:'error', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch favorites JP error', error:e2}});
               }
             }
-          } catch(e){}
+          }
         }
-        // 合并
-        groups[gKey].forEach(fItem=>{
-          const rowIdx = fItem.rowIndex;
-          let found = baseQArr[rowIdx];
-          if(found) {
-            let newQ={
-              rowIndex: found.rowIndex,
-              question: found.question,
-              image: found.image,
-              answer: found.answer,
-              explanation: found.explanation,
-              jpQuestion: found.jpQuestion || "",
-              jpExplanation: found.jpExplanation || "",
-              sheetName: fItem.sheetName,
-              sheetSource: found.sheetSource
-            };
-            allFavs.push(newQ);
-          } else {
-            // fallback
-            allFavs.push({
-              ...fItem
-            });
+
+        // 挑出收藏行
+        let favSet=new Set();
+        groupMap[gk].forEach(fItem=>{
+          let rowIdx= fItem.rowIndex;
+          let found= baseQArr[rowIdx];
+          let key= spId+"_"+rowIdx; 
+          if(!favSet.has(key)){
+            favSet.add(key);
+            if(found){
+              allFavs.push({
+                ...found,
+                spreadId: spId,
+                apiKey: fItem.apiKey,
+                sheetName: sName, 
+                internalCode: fItem.internalCode||"",
+                jpQuestion: found.jpQuestion||"",
+                jpExplanation: found.jpExplanation||""
+              });
+            } else{
+              // 在源表里找不到就直接用fItem
+              allFavs.push({...fItem});
+            }
           }
         });
       }
-      if(allFavs.length===0) {
-        alert("收藏题数据为空");
+      if(allFavs.length===0){
+        alert("收藏数据为空");
         return;
       }
-      questions = randomOrder? shuffle(allFavs): allFavs;
+      questions= randomOrder ? shuffle(allFavs) : allFavs;
       currentQuestionIndex=0;
       userAnswers=[];
       answerVisible=false;
@@ -1655,93 +1201,399 @@
     }
 
     /********************************************
-     * 大乱斗
+     * 6) 大乱斗
      ********************************************/
-    async function startBattleMode() {
-      const selected = Array.from(document.querySelectorAll('#battle-sheet-selection input[type="checkbox"]:checked'))
-        .map(cb=>cb.value);
-      if(selected.length===0) {
+    function openBattleModeSelection(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'openBattleModeSelection'}});
+      document.getElementById('battle-mode-selection-container').style.display='flex';
+      const c= document.getElementById('battle-sheet-selection');
+      c.innerHTML="";
+      let used= new Set();
+      sheetListForBattle.forEach(s=>{
+        let uk= s.sheetName+"||"+s.spreadId;
+        if(!used.has(uk)){
+          used.add(uk);
+          const div= document.createElement('div');
+          div.classList.add('sheet-option');
+          div.innerHTML=`
+            <label>
+              <input type="checkbox" value="${s.sheetName}||${s.spreadId}||${s.apiKey}||${s.internalCode}">
+              ${s.sheetName}
+            </label>
+          `;
+          c.appendChild(div);
+        }
+      });
+    }
+    function closeBattleModeSelection(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'closeBattleModeSelection'}});
+      document.getElementById('battle-mode-selection-container').style.display='none';
+    }
+    async function startBattleMode(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'startBattleMode'}});
+      const selected= Array.from(document.querySelectorAll('#battle-sheet-selection input[type="checkbox"]:checked'))
+        .map(cb=> cb.value);
+      if(selected.length===0){
         alert("请选择至少一个套题进行大乱斗！");
         return;
       }
       let num= prompt("请输入大乱斗题数(10-500)：","50");
       if(num===null) return;
-      num=parseInt(num);
-      if(isNaN(num)|| num<10|| num>500) {
+      num= parseInt(num);
+      if(isNaN(num)|| num<10 || num>500){
         alert("请输入10~500的数字");
         return;
       }
       closeBattleModeSelection();
-      document.getElementById('sheet-selection').innerHTML="加载大乱斗套题中...";
 
       let allQ=[];
-      for(const s of selected) {
-        const [shName, src] = s.split("||");
-        let baseUrl="";
-        if(src==="old") {
-          baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(shName)}?key=${apiKey}`;
-        } else {
-          baseUrl = `https://sheets.googleapis.com/v4/spreadsheets/${newSpreadsheetId}/values/${encodeURIComponent(shName)}?key=${newApiKey}`;
-        }
-        let baseQ=[];
-        try {
-          const r= await fetch(baseUrl);
-          if(r.ok) {
-            const d= await r.json();
-            if(d.values && d.values.length>0) {
-              baseQ = processSheetData(d.values, src);
+      for(const sel of selected){
+        const [sName, sId, sApi, iCode]= sel.split("||");
+        let baseQArr=[];
+        try{
+          let url= `https://sheets.googleapis.com/v4/spreadsheets/${sId}/values/${encodeURIComponent(sName)}?key=${sApi}`;
+          logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'battle fetch CN', url}});
+          let r= await fetch(url);
+          if(r.ok){
+            let d= await r.json();
+            if(d.values && d.values.length>0){
+              baseQArr= processSheetData(d.values);
             }
           }
-        } catch(e){}
-
-        // 加载日语
-        if(showJapanese) {
-          try {
-            const jpUrl = `https://sheets.googleapis.com/v4/spreadsheets/${jpSpreadsheetId}/values/${encodeURIComponent(shName)}?key=${jpApiKey}`;
-            const jpR= await fetch(jpUrl);
-            if(jpR.ok) {
-              const jpD= await jpR.json();
-              if(jpD.values && jpD.values.length>0) {
-                const jpArr= processSheetData(jpD.values, src,true);
-                baseQ.forEach((q,idx)=>{
-                  if(jpArr[idx]) {
-                    q.jpQuestion= jpArr[idx].question;
-                    q.jpExplanation= jpArr[idx].explanation;
-                  }
-                });
+        }catch(e){}
+        // 若显示日语
+        if(showJapanese){
+          let jpItem= categoriesData.find(x=> x.lang==="JP" && x.internalCode===iCode && x.spreadId===sId);
+          if(jpItem){
+            try{
+              let jurl= `https://sheets.googleapis.com/v4/spreadsheets/${jpItem.spreadId}/values/${encodeURIComponent(jpItem.sheetName)}?key=${jpItem.apiKey}`;
+              logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'battle fetch JP', jurl}});
+              let jr= await fetch(jurl);
+              if(jr.ok){
+                let jd= await jr.json();
+                if(jd.values && jd.values.length>0){
+                  let jpArr= processSheetData(jd.values,true);
+                  baseQArr.forEach((qq,idx)=>{
+                    if(jpArr[idx]){
+                      qq.jpQuestion= jpArr[idx].question;
+                      qq.jpExplanation= jpArr[idx].explanation;
+                    }
+                  });
+                }
               }
-            }
-          } catch(e){}
+            }catch(e2){}
+          }
         }
-        allQ = allQ.concat(baseQ);
+        // 标记spreadId/apiKey
+        baseQArr.forEach(bq=>{
+          bq.spreadId= sId;
+          bq.apiKey= sApi;
+          bq.sheetName= sName;      
+          bq.internalCode= iCode;
+        });
+        allQ= allQ.concat(baseQArr);
       }
-      if(allQ.length===0) {
-        document.getElementById('sheet-selection').innerHTML="大乱斗套题为空";
+      if(allQ.length===0){
+        alert("可用题数为0，无法进行大乱斗");
         return;
       }
-      if(allQ.length<num) {
-        alert(`可用题数${allQ.length},将使用全部题`);
+      if(allQ.length<num){
+        alert(`可用题数 ${allQ.length}，将使用全部题`);
         num= allQ.length;
       }
+      allQ= shuffle(allQ).slice(0,num);
       currentSheetName="大乱斗套题";
       isBattleMode=true; isMistakeMode=false; isFavoritesMode=false;
-      allQ= shuffle(allQ).slice(0,num);
-      questions = randomOrder? shuffle(allQ): allQ;
+      questions= randomOrder ? shuffle(allQ) : allQ;
       startQuiz();
-    }
-    function openBattleModeSelection() {
-      document.getElementById('battle-mode-selection-container').style.display='flex';
-    }
-    function closeBattleModeSelection() {
-      document.getElementById('battle-mode-selection-container').style.display='none';
     }
 
     /********************************************
-     * 继续考试: 同步 3大复选框
+     * 7) 错题复习
      ********************************************/
-    function continueExam() {
-      const exam = loadCurrentExam();
-      if(!exam) {
+    function startMistakeQuiz(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'startMistakeQuiz'}});
+      let mObj= loadMistakesFromCache();
+      let keys= Object.keys(mObj);
+      if(keys.length===0){
+        alert("没有错题记录");
+        return;
+      }
+      isMistakeMode=true; isBattleMode=false; isFavoritesMode=false;
+      currentSheetName="错题集";
+
+      let groupMap={};
+      keys.forEach(k=>{
+        let it= mObj[k];
+        let gk= it.spreadId+"||"+ it.sheetName;
+        if(!groupMap[gk]) groupMap[gk]=[];
+        groupMap[gk].push(it);
+      });
+
+      let allQs=[];
+      (async()=>{
+        for(const gk in groupMap){
+          const [spId, sName] = gk.split("||");
+          if(!spId || !sName){
+            logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'mistake missing spId or sName', gk}});
+            return;
+          }
+          let baseArr=[];
+          try{
+            let theKey= groupMap[gk][0].apiKey ||"";
+            let url= `https://sheets.googleapis.com/v4/spreadsheets/${spId}/values/${encodeURIComponent(sName)}?key=${theKey}`;
+            logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch mistake CN', url}});
+            let r= await fetch(url);
+            if(r.ok){
+              let dd= await r.json();
+              if(dd.values && dd.values.length>0){
+                baseArr= processSheetData(dd.values);
+              }
+            }
+          }catch(e){
+            logs.push({type:'error', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch mistake CN error', error:e}});
+          }
+          // 日语
+          if(showJapanese){
+            let iCode= groupMap[gk][0].internalCode||"";
+            let jpEntry= categoriesData.find(x=> x.lang==="JP" && x.internalCode=== iCode && x.spreadId=== spId);
+            if(jpEntry){
+              try{
+                let jurl= `https://sheets.googleapis.com/v4/spreadsheets/${jpEntry.spreadId}/values/${encodeURIComponent(jpEntry.sheetName)}?key=${jpEntry.apiKey}`;
+                logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch mistake JP', jurl}});
+                let jr= await fetch(jurl);
+                if(jr.ok){
+                  let jd= await jr.json();
+                  if(jd.values && jd.values.length>0){
+                    let jpArr= processSheetData(jd.values,true);
+                    baseArr.forEach((bb,idx)=>{
+                      if(jpArr[idx]){
+                        bb.jpQuestion= jpArr[idx].question;
+                        bb.jpExplanation= jpArr[idx].explanation;
+                      }
+                    });
+                  }
+                }
+              }catch(e2){
+                logs.push({type:'error', time:new Date().toLocaleString(), location:userLocation, detail:{message:'fetch mistake JP error', error:e2}});
+              }
+            }
+          }
+
+          groupMap[gk].forEach(mItem=>{
+            let rowIdx= mItem.rowIndex;
+            let found= baseArr[rowIdx];
+            if(found){
+              allQs.push({
+                ...found,
+                userAnswer: mItem.userAnswer||"",
+                spreadId: spId,
+                apiKey: mItem.apiKey,
+                sheetName: mItem.sheetName,
+                internalCode: mItem.internalCode||"",
+                jpQuestion: found.jpQuestion||"",
+                jpExplanation: found.jpExplanation||""
+              });
+            }else{
+              allQs.push({...mItem});
+            }
+          });
+        }
+        if(allQs.length===0){
+          alert("错题数据为空");
+          return;
+        }
+        questions= randomOrder? shuffle(allQs): allQs;
+        currentQuestionIndex=0;
+        userAnswers=[];
+        answerVisible=false;
+        mistakeQuestions=[];
+        elapsedTime=0;
+        clearCurrentExam();
+
+        document.getElementById('container').style.display='none';
+        document.getElementById('quiz-container').style.display='block';
+        document.getElementById('sheet-name').textContent="错题单元测试";
+        loadQuestion();
+        startTimer();
+      })();
+    }
+
+    /********************************************
+     * 8) 交卷
+     ********************************************/
+    function submitQuiz(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'submitQuiz'}});
+      if(!allQuestionsAnswered()){
+        if(!confirm("还有未作答题目，确定交卷吗？")) return;
+      }
+      stopTimer();
+      quizEndTime= new Date();
+      let ms= quizEndTime - quizStartTime + elapsedTime;
+      let mm= Math.floor(ms/60000);
+      let ss= Math.floor((ms%60000)/1000);
+      let timeFormatted= `${mm}分钟${ss}秒`;
+
+      let incorrect=0, correct=0, unanswered=0;
+      let mistakesObj= loadMistakesFromCache();
+      mistakeQuestions=[];
+      let total= questions.length;
+      let totalScore=0, scorePer= 100/ total;
+
+      questions.forEach((q,i)=>{
+        let ans= userAnswers[i];
+        if(!ans){
+          unanswered++;
+        } else if(ans===q.answer){
+          correct++;
+          totalScore+= scorePer;
+        } else {
+          incorrect++;
+          let k= getMistakeKey(q);
+          if(mistakesObj[k]){
+            mistakesObj[k].count++;
+            mistakesObj[k].userAnswer= ans;
+          } else{
+            mistakesObj[k]= {
+              rowIndex: q.rowIndex,
+              question: q.question,
+              image: q.image,
+              answer: q.answer,
+              explanation: q.explanation,
+              jpQuestion: q.jpQuestion||"",
+              jpExplanation: q.jpExplanation||"",
+              spreadId: q.spreadId,
+              apiKey: q.apiKey,
+              sheetName: q.sheetName,
+              internalCode: q.internalCode||"",
+              count:1,
+              userAnswer: ans
+            };
+          }
+          mistakeQuestions.push({...q, userAnswer: ans});
+        }
+      });
+      totalScore= Math.floor(totalScore);
+      if(totalScore>100) totalScore=100;
+      saveMistakesToCache(mistakesObj);
+      clearCurrentExam();
+
+      document.getElementById('quiz-container').style.display='none';
+      document.getElementById('result-container').style.display='block';
+
+      let scoreMsg="", scoreClass="";
+      if(totalScore===100){
+        scoreMsg="满分！非常棒！";
+        scoreClass="score-excellent";
+      } else if(totalScore>=90){
+        scoreMsg="合格！继续加油！";
+        scoreClass="score-good";
+      } else{
+        scoreMsg="不合格，请继续努力！";
+        scoreClass="score-bad";
+      }
+
+      document.getElementById('score').textContent= `得分：${totalScore}分 - ${scoreMsg}`;
+      document.getElementById('score').className= scoreClass;
+      document.getElementById('mistake-count').textContent= `做错：${incorrect}道`;
+      document.getElementById('correct-count').textContent= `做对：${correct}道`;
+      document.getElementById('unanswered-count').textContent= `未做：${unanswered}道`;
+      document.getElementById('completion-status').textContent= `完成度：${correct+incorrect}/${total}`;
+
+      let ansed= correct+incorrect;
+      let pct= Math.floor(ansed/total*100);
+      let bar= document.getElementById('progress-bar');
+      bar.style.width= pct+'%';
+      bar.textContent= pct+'%';
+      if(pct>=90) bar.style.backgroundColor='#28a745';
+      else if(pct>=70) bar.style.backgroundColor='#ffc107';
+      else bar.style.backgroundColor='#dc3545';
+
+      let history= loadQuizHistory();
+      history.push({
+        dateTime: new Date().toLocaleString(),
+        sheetName: currentSheetName,
+        wrongCount: incorrect,
+        correctCount: correct,
+        unansweredCount: unanswered,
+        timeSpent: timeFormatted,
+        answered: ansed,
+        total,
+        score: totalScore
+      });
+      saveQuizHistory(history);
+
+      logs.push({
+        type:'quiz',
+        time:new Date().toLocaleString(),
+        location:userLocation,
+        detail:{
+          sheetName: currentSheetName,
+          wrongCount: incorrect,
+          correctCount: correct,
+          unansweredCount: unanswered,
+          timeSpent: timeFormatted,
+          answered: ansed,
+          total,
+          score: totalScore
+        }
+      });
+    }
+
+    function allQuestionsAnswered(){
+      return questions.every((q,i)=>{
+        return userAnswers[i]==="⭕"|| userAnswers[i]==="❌";
+      });
+    }
+    function getMistakeKey(q){
+      // [spreadId, rowIndex, sheetName]
+      return [q.spreadId, q.rowIndex, q.sheetName].join("||");
+    }
+    function viewMistakes(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'viewMistakes'}});
+      document.getElementById('result-container').style.display='none';
+      document.getElementById('current-mistakes-container').style.display='block';
+      const c= document.getElementById('current-mistakes-list');
+      c.innerHTML="";
+      if(mistakeQuestions.length===0){
+        c.innerHTML="<p>本次没有错题</p>";
+        return;
+      }
+      mistakeQuestions.forEach((item,idx)=>{
+        let wrap= document.createElement('div');
+        let qText= item.question;
+        if(showJapanese && item.jpQuestion){
+          qText+= "\n-----\n"+ item.jpQuestion;
+        }
+        let html= `<div><strong>题目 ${idx+1}：</strong>${qText}</div>`;
+        if(item.image){
+          html+=`<div><img src="${item.image}" style="max-width:100%;max-height:150px;object-fit:contain;margin-top:10px;"></div>`;
+        }
+        html+=`<div><strong>您的错误答案：</strong>${item.userAnswer}</div>
+               <div><strong>正确答案：</strong>${item.answer}</div>`;
+        if(item.explanation){
+          html+=`<div><strong>解说：</strong>${item.explanation}</div>`;
+        }
+        if(showJapanese && item.jpExplanation){
+          html+= `<div><strong>日文解说：</strong>${item.jpExplanation}</div>`;
+        }
+        wrap.innerHTML= html;
+        c.appendChild(wrap);
+      });
+    }
+    function showScore(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'showScore'}});
+      document.getElementById('current-mistakes-container').style.display='none';
+      document.getElementById('result-container').style.display='block';
+    }
+
+    /********************************************
+     * 9) 继续考试
+     ********************************************/
+    function continueExam(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'continueExam'}});
+      const exam= loadCurrentExam();
+      if(!exam){
         alert("没有未完成考试");
         return;
       }
@@ -1749,16 +1601,15 @@
       exam.autoNext= loadAutoNextSetting();
       exam.showJapanese= loadShowJapaneseSetting();
 
-      const {sheetName, currentQuestionIndex: idx, userAnswers:ua, questions:qs, isBattleMode:bm, isMistakeMode:mm, isFavoritesMode:fm} = exam;
+      const {sheetName, currentQuestionIndex: idx, userAnswers:ua, questions:qs, isBattleMode:bm, isMistakeMode:mm, isFavoritesMode:fm}= exam;
       const total= qs.length;
-      const confirmC= confirm(`检测到您上次考试未完成(套题：${sheetName},进度：${idx+1}/${total}),是否继续?`);
-      if(!confirmC) {
+      if(!confirm(`检测到您上次考试未完成(套题：${sheetName},进度：${idx+1}/${total}),是否继续?`)){
         clearCurrentExam();
         return;
       }
       currentSheetName= sheetName;
       currentQuestionIndex= idx;
-      userAnswers=ua;
+      userAnswers= ua;
       questions= qs;
       isBattleMode= bm;
       isMistakeMode= mm;
@@ -1771,187 +1622,226 @@
       document.getElementById('random-checkbox').checked= randomOrder;
       document.getElementById('autonext-checkbox').checked= autoNext;
       document.getElementById('show-japanese-checkbox').checked= showJapanese;
-      startQuizFromState();
+
+      document.getElementById('container').style.display='none';
+      document.getElementById('quiz-container').style.display='block';
+      document.getElementById('sheet-name').textContent=`当前套题：${currentSheetName}`;
+      loadQuestion();
+      startTimer();
     }
 
     /********************************************
-     * 计时器
+     * 10) 计时器
      ********************************************/
-    function startTimer() {
-      const t= document.getElementById('timer');
-      quizStartTime=new Date();
+    function startTimer(){
+      let t= document.getElementById('timer');
+      quizStartTime= new Date();
       timerInterval= setInterval(()=>{
-        const now=new Date();
-        const e= now - quizStartTime + elapsedTime;
-        const m= Math.floor(e/60000);
-        const s= Math.floor((e%60000)/1000);
-        t.textContent= `时间：${String(m).padStart(2,'0')}分钟${String(s).padStart(2,'0')}秒`;
+        let now= new Date();
+        let e= now - quizStartTime + elapsedTime;
+        let m= Math.floor(e/60000);
+        let s= Math.floor((e%60000)/1000);
+        t.textContent=`时间：${String(m).padStart(2,'0')}分钟${String(s).padStart(2,'0')}秒`;
       },1000);
     }
-    function stopTimer() {
+    function stopTimer(){
       clearInterval(timerInterval);
+    }
+    function pauseExam(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'pauseExam'}});
+      stopTimer();
+      elapsedTime += (new Date()) - quizStartTime;
+      saveCurrentExam();
+      alert("考试进度已保存！");
+      document.getElementById('quiz-container').style.display='none';
+      document.getElementById('container').style.display='block';
+      if(loadCurrentExam()){
+        document.getElementById('continue-exam-btn').style.display='inline-block';
+      }
+    }
+    function resetQuiz(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'resetQuiz'}});
+      stopTimer();
+      hideAll();
+      document.getElementById('container').style.display='block';
+      isBattleMode=false; isMistakeMode=false; isFavoritesMode=false;
+      // 重新渲染类别
+      renderCategoryButtons();
+      if(loadCurrentExam()){
+        document.getElementById('continue-exam-btn').style.display='inline-block';
+      } else{
+        document.getElementById('continue-exam-btn').style.display='none';
+      }
     }
 
     /********************************************
-     * 其他功能
+     * 11) 清空历史
      ********************************************/
-    function showScore() {
-      document.getElementById('current-mistakes-container').style.display='none';
-      document.getElementById('result-container').style.display='block';
-    }
-    function clearAllHistory() {
+    function clearAllHistory(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'clearAllHistory'}});
       if(!confirm("确认清除所有历史记录和错题吗？")) return;
       localStorage.clear();
-      alert("历史已清除");
+      // 清除内存中的 favorites
+      favorites = {};
+      alert("历史已清除，包括我的收藏");
       resetQuiz();
     }
-    function showUpdateLogs() {
-      hideAll();
-      document.getElementById('update-logs-container').style.display='block';
-    }
-    async function viewConsoleLogs() {
-      const pwd= prompt("请输入查看日志密码：");
-      if(pwd!=="Aa123456") {
+
+    /********************************************
+     * 12) 日志查看 & 写入
+     ********************************************/
+    async function viewConsoleLogs(){
+      let pwd= prompt("请输入查看日志密码：");
+      if(pwd!=="Aa123456"){
         alert("密码错误");
         return;
       }
-      try {
+      try{
         await recordLogsToSheet();
-      } catch(e) {
+      }catch(e){
         console.error("写日志失败", e);
       }
       showConsoleLogsFromSheet();
     }
-    async function recordLogsToSheet() {
+
+    async function recordLogsToSheet(){
       if(logs.length===0) return;
-      const values= logs.map(log=>{
-        if(log.type==='access') {
-          return ['access',log.time||'',log.location||'',log.detail.device||'',log.detail.ip||'','N/A','N/A','N/A'];
-        } else if(log.type==='error') {
-          return ['error',log.time||'',log.location||'',log.detail.message||'',log.detail.sheet||'',log.detail.row||'','N/A', JSON.stringify(log.detail.questionData||'')];
-        } else if(log.type==='quiz') {
-          return ['quiz',log.time||'',log.location||'',
-            `Sheet:${log.detail.sheetName},Wrong:${log.detail.wrongCount},Correct:${log.detail.correctCount},Unans:${log.detail.unansweredCount},Time:${log.detail.timeSpent},Score:${log.detail.score}`,
-            'N/A','N/A','N/A','N/A'];
-        }
+      // 简化：存4列 [type, time, location, detail]
+      const values= logs.map(l=>{
+        let detailStr= typeof l.detail==='object' ? JSON.stringify(l.detail): (l.detail||"");
+        return [l.type, l.time||"", l.location||"", detailStr];
       });
-      const url= `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Console!A1:append?valueInputOption=RAW&key=${apiKey}`;
-      const body= {values: values};
-      await fetch(url,{
+      let url= `https://sheets.googleapis.com/v4/spreadsheets/${SYSTEM_SPREADSHEET_ID}/values/${encodeURIComponent(LOG_SHEET_NAME)}!A1:append?valueInputOption=RAW&key=${SYSTEM_API_KEY}`;
+      let body= { values };
+      let r= await fetch(url,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify(body)
       });
+      if(!r.ok){
+        throw new Error("recordLogsToSheet: append failed");
+      }
       logs=[];
     }
-    async function showConsoleLogsFromSheet() {
+
+    async function showConsoleLogsFromSheet(){
       hideAll();
       document.getElementById('console-logs-container').style.display='block';
       const c= document.getElementById('console-logs-content');
       c.textContent="加载中...";
-      try {
-        const url= `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Console!A:Z?key=${apiKey}`;
-        const r= await fetch(url);
-        if(!r.ok) {
+      try{
+        let url= `https://sheets.googleapis.com/v4/spreadsheets/${SYSTEM_SPREADSHEET_ID}/values/${encodeURIComponent(LOG_SHEET_NAME)}!A:Z?key=${SYSTEM_API_KEY}`;
+        let r= await fetch(url);
+        if(!r.ok){
           c.innerHTML="<p>日志加载失败</p>";
           return;
         }
-        const dat= await r.json();
-        if(!dat.values || dat.values.length<=1) {
+        let d= await r.json();
+        if(!d.values || d.values.length<=1){
           c.innerHTML="<p>暂无日志</p>";
           return;
         }
-        const table= document.createElement('table');
-        const thead= document.createElement('thead');
-        const hr= document.createElement('tr');
-        const headers=["类型","时间","地点","设备/消息","IP","Row","Col","QuestionData"];
-        headers.forEach(h=>{
-          const th= document.createElement('th');
-          th.textContent= h;
-          hr.appendChild(th);
+        let table= document.createElement('table');
+        let thead= document.createElement('thead');
+        let thr= document.createElement('tr');
+        ["类型","时间","地点","明细"].forEach(h=>{
+          let th= document.createElement('th');
+          th.textContent=h;
+          thr.appendChild(th);
         });
-        thead.appendChild(hr);
+        thead.appendChild(thr);
         table.appendChild(thead);
 
-        const tbody= document.createElement('tbody');
-        dat.values.slice(1).forEach(rowArr=>{
-          const tr= document.createElement('tr');
-          headers.forEach((h,i)=>{
-            const td= document.createElement('td');
+        let tbody= document.createElement('tbody');
+        d.values.slice(1).forEach(rowArr=>{
+          let tr= document.createElement('tr');
+          for(let i=0;i<4;i++){
+            let td= document.createElement('td');
             td.textContent= rowArr[i]||"";
             tr.appendChild(td);
-          });
+          }
           tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        c.innerHTML='';
+        c.innerHTML="";
         c.appendChild(table);
-      } catch(e) {
+      }catch(e){
         console.error(e);
         c.innerHTML="<p>日志异常</p>";
       }
     }
 
-    function showFunctionIntro() {
+    /********************************************
+     * 13) 功能介绍 / 更新日志 / 汇总表现
+     ********************************************/
+    function showFunctionIntro(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'showFunctionIntro'}});
       hideAll();
       document.getElementById('function-intro-container').style.display='block';
     }
-    function showSummary() {
+    function showUpdateLogs(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'showUpdateLogs'}});
+      hideAll();
+      document.getElementById('update-logs-container').style.display='block';
+    }
+    function showSummary(){
+      logs.push({type:'log', time:new Date().toLocaleString(), location:userLocation, detail:{message:'showSummary'}});
       hideAll();
       document.getElementById('summary-container').style.display='block';
-      const summary= document.getElementById('summary-content');
-      summary.textContent="加载中...";
+      let s= document.getElementById('summary-content');
+      s.textContent="加载中...";
 
-      const history= loadQuizHistory();
-      if(history.length===0) {
-        summary.innerHTML="<p>暂无做题历史</p>";
+      let his= loadQuizHistory();
+      if(his.length===0){
+        s.innerHTML="<p>暂无做题历史</p>";
         return;
       }
-      const summaryBySheet={};
-      history.forEach(e=>{
-        if(!summaryBySheet[e.sheetName]) {
-          summaryBySheet[e.sheetName]={
-            attempts:0, totalWrong:0, totalCorrect:0, totalUnanswered:0,
-            totalTime:0, lastCompletionTime:"", lastCompletion:{answered:0,total:0},
-            scores:[], individualPerformances:[]
+      let mapSum={};
+      his.forEach(e=>{
+        if(!mapSum[e.sheetName]){
+          mapSum[e.sheetName]={
+            attempts:0,
+            totalWrong:0,
+            totalCorrect:0,
+            totalUnanswered:0,
+            totalTime:0,
+            lastCompletionTime:"",
+            lastCompletion:{answered:0, total:0},
+            scores:[],
+            individual:[]
           };
         }
-        summaryBySheet[e.sheetName].attempts++;
-        summaryBySheet[e.sheetName].totalWrong+= e.wrongCount;
-        summaryBySheet[e.sheetName].totalCorrect+= e.correctCount;
-        summaryBySheet[e.sheetName].totalUnanswered+= e.unansweredCount;
-        const match= e.timeSpent.match(/(\d+)分钟(\d+)秒/);
-        let secs=0; 
-        if(match) secs= parseInt(match[1])*60 + parseInt(match[2]);
-        summaryBySheet[e.sheetName].totalTime+= secs;
-        summaryBySheet[e.sheetName].lastCompletionTime= e.dateTime;
-        summaryBySheet[e.sheetName].lastCompletion={answered:e.answered,total:e.total};
-        summaryBySheet[e.sheetName].scores.push(e.score);
-        summaryBySheet[e.sheetName].individualPerformances.push({
-          dateTime: e.dateTime,
-          wrongCount: e.wrongCount,
-          correctCount: e.correctCount,
-          unansweredCount: e.unansweredCount,
-          timeSpent: e.timeSpent,
-          answered: e.answered,
-          total: e.total,
-          score: e.score
-        });
+        let st= mapSum[e.sheetName];
+        st.attempts++;
+        st.totalWrong+= e.wrongCount;
+        st.totalCorrect+= e.correctCount;
+        st.totalUnanswered+= e.unansweredCount;
+        let match= e.timeSpent.match(/(\d+)分钟(\d+)秒/);
+        let secs=0;
+        if(match){
+          secs= parseInt(match[1])*60 + parseInt(match[2]);
+        }
+        st.totalTime+= secs;
+        st.lastCompletionTime= e.dateTime;
+        st.lastCompletion= { answered:e.answered, total:e.total };
+        st.scores.push(e.score);
+        st.individual.push(e);
       });
 
       let html="";
-      for(const sheet in summaryBySheet) {
-        const s= summaryBySheet[sheet];
-        const avgWrong= (s.totalWrong/s.attempts).toFixed(2);
-        const avgCorrect= (s.totalCorrect/s.attempts).toFixed(2);
-        const avgUnans= (s.totalUnanswered/s.attempts).toFixed(2);
-        const avgScore= (s.scores.reduce((a,b)=>a+b,0)/s.attempts).toFixed(2);
-        const avgSec= Math.floor(s.totalTime/s.attempts);
-        const m= Math.floor(avgSec/60);
-        const se= avgSec%60;
-        const avgTimeFormatted= `${m}分钟${se}秒`;
-        html+= `<div class="summary-sheet">
-          <h3>套题：${sheet}</h3>
+      for(const sn in mapSum){
+        let st= mapSum[sn];
+        let avgWrong= (st.totalWrong/st.attempts).toFixed(2);
+        let avgCorrect= (st.totalCorrect/st.attempts).toFixed(2);
+        let avgUnans= (st.totalUnanswered/st.attempts).toFixed(2);
+        let avgScore= (st.scores.reduce((a,b)=>a+b,0)/ st.attempts).toFixed(2);
+        let avgSec= Math.floor(st.totalTime/st.attempts);
+        let mm= Math.floor(avgSec/60);
+        let ss= avgSec%60;
+        let avgTime= `${mm}分钟${ss}秒`;
+
+        html+=`<div class="summary-sheet">
+          <h3>套题：${sn}</h3>
           <table>
             <tr>
               <th>总练习次数</th>
@@ -1964,17 +1854,17 @@
               <th>最近一次完成度</th>
             </tr>
             <tr>
-              <td>${s.attempts}</td>
+              <td>${st.attempts}</td>
               <td>${avgWrong}</td>
               <td>${avgCorrect}</td>
               <td>${avgUnans}</td>
               <td>${avgScore}</td>
-              <td>${avgTimeFormatted}</td>
-              <td>${s.lastCompletionTime}</td>
-              <td>${s.lastCompletion.answered}/${s.lastCompletion.total}</td>
+              <td>${avgTime}</td>
+              <td>${st.lastCompletionTime}</td>
+              <td>${st.lastCompletion.answered}/${st.lastCompletion.total}</td>
             </tr>
           </table>
-          <h4>每次做题表现：</h4>
+          <h4 style="margin-top:10px;">每次做题表现：</h4>
           <table>
             <tr>
               <th>日期时间</th>
@@ -1985,23 +1875,26 @@
               <th>得分</th>
               <th>完成度</th>
             </tr>`;
-        s.individualPerformances.forEach(perf=>{
+        st.individual.forEach(e=>{
           html+=`<tr>
-              <td>${perf.dateTime}</td>
-              <td>${perf.wrongCount}</td>
-              <td>${perf.correctCount}</td>
-              <td>${perf.unansweredCount}</td>
-              <td>${perf.timeSpent}</td>
-              <td>${perf.score}</td>
-              <td>${perf.answered}/${perf.total}</td>
+            <td>${e.dateTime}</td>
+            <td>${e.wrongCount}</td>
+            <td>${e.correctCount}</td>
+            <td>${e.unansweredCount}</td>
+            <td>${e.timeSpent}</td>
+            <td>${e.score}</td>
+            <td>${e.answered}/${e.total}</td>
           </tr>`;
         });
         html+=`</table></div>`;
       }
-      summary.innerHTML=html;
+      s.innerHTML=html;
     }
 
-    function hideAll() {
+    /********************************************
+     * 14) 隐藏容器
+     ********************************************/
+    function hideAll(){
       document.getElementById('container').style.display='none';
       document.getElementById('quiz-container').style.display='none';
       document.getElementById('result-container').style.display='none';
@@ -2015,159 +1908,263 @@
     }
 
     /********************************************
-     * 留言板 / 更新日志 / 功能介绍
+     * 15) 初始消息、更新日志、功能介绍
      ********************************************/
-    function triggerScan() {
-      const img = document.querySelector('#initial-message img');
-      if(img) window.open(img.src,'_blank');
-    }
-    async function loadInitialMessages() {
+    async function loadInitialMessages(){
       const box= document.getElementById('initial-message');
       box.innerHTML="<p>加载中...</p>";
-      try {
-        const url= `https://sheets.googleapis.com/v4/spreadsheets/${systemSpreadsheetId}/values/CN!B1:B5?key=${systemApiKey}`;
-        const r= await fetch(url);
-        if(!r.ok) {
+      try{
+        let url= `https://sheets.googleapis.com/v4/spreadsheets/${SYSTEM_SPREADSHEET_ID}/values/CN!B1:B5?key=${SYSTEM_API_KEY}`;
+        let r= await fetch(url);
+        if(!r.ok){
           box.innerHTML="<p>无法加载留言</p>";
           return;
         }
-        const d= await r.json();
-        if(!d.values || d.values.length===0) {
+        let d= await r.json();
+        if(!d.values || d.values.length===0){
           box.innerHTML="<p>暂无留言</p>";
           return;
         }
         box.innerHTML="";
         d.values.slice(0,4).forEach(row=>{
-          const msg= row[0]? row[0].trim():"";
-          if(msg) {
-            const p= document.createElement('p');
+          let msg= row[0]? row[0].trim():"";
+          if(msg){
+            let p= document.createElement('p');
             p.textContent= msg;
             box.appendChild(p);
           }
         });
-        if(d.values.length>=5) {
-          const qr= d.values[4][0]? d.values[4][0].trim():"";
-          if(qr) {
-            const img= document.createElement('img');
+        if(d.values.length>=5){
+          let qr= d.values[4][0]? d.values[4][0].trim():"";
+          if(qr){
+            let img= document.createElement('img');
             img.src= qr;
             img.alt="加入社区二维码";
             img.onclick= triggerScan;
             box.appendChild(img);
           }
         }
-      } catch(e) {
+      }catch(e){
         console.error(e);
         box.innerHTML="<p>留言加载出错</p>";
       }
     }
-    async function loadUpdateLogs() {
+    function triggerScan(){
+      let img= document.querySelector('#initial-message img');
+      if(img) window.open(img.src,'_blank');
+    }
+
+    async function loadUpdateLogs(){
       const box= document.getElementById('update-logs-list');
       box.innerHTML="<p>加载中...</p>";
-      try {
-        const url= `https://sheets.googleapis.com/v4/spreadsheets/${systemSpreadsheetId}/values/CN!C1:D?key=${systemApiKey}`;
-        const r= await fetch(url);
-        if(!r.ok) {
+      try{
+        let url= `https://sheets.googleapis.com/v4/spreadsheets/${SYSTEM_SPREADSHEET_ID}/values/CN!C1:D?key=${SYSTEM_API_KEY}`;
+        let r= await fetch(url);
+        if(!r.ok){
           box.innerHTML="<p>无法加载更新日志</p>";
           return;
         }
-        const d= await r.json();
-        if(!d.values || d.values.length<2) {
+        let d= await r.json();
+        if(!d.values || d.values.length<2){
           box.innerHTML="<p>暂无更新日志</p>";
           return;
         }
         box.innerHTML="";
-        const table= document.createElement('table');
-        const thead= document.createElement('thead');
-        const hr= document.createElement('tr');
-        const headers=["日期","更新内容"];
-        headers.forEach(h=>{
-          const th= document.createElement('th');
-          th.textContent= h;
-          hr.appendChild(th);
+        let table= document.createElement('table');
+        let thead= document.createElement('thead');
+        let tr= document.createElement('tr');
+        ["日期","更新内容"].forEach(h=>{
+          let th= document.createElement('th');
+          th.textContent=h;
+          tr.appendChild(th);
         });
-        thead.appendChild(hr);
+        thead.appendChild(tr);
         table.appendChild(thead);
 
-        const tbody= document.createElement('tbody');
+        let tbody= document.createElement('tbody');
         d.values.slice(1).forEach(rowArr=>{
-          const cDate= rowArr[0]? rowArr[0].trim():"";
-          const cInfo= rowArr[1]? rowArr[1].trim():"";
-          if(cDate||cInfo) {
-            const tr= document.createElement('tr');
-            const td1= document.createElement('td');
-            td1.textContent=cDate;
-            const td2= document.createElement('td');
-            td2.textContent=cInfo;
-            tr.appendChild(td1);
-            tr.appendChild(td2);
-            tbody.appendChild(tr);
+          let cDate= rowArr[0]? rowArr[0].trim():"";
+          let cInfo= rowArr[1]? rowArr[1].trim():"";
+          if(cDate||cInfo){
+            let tr2= document.createElement('tr');
+            let td1= document.createElement('td');
+            td1.textContent= cDate;
+            let td2= document.createElement('td');
+            td2.textContent= cInfo;
+            tr2.appendChild(td1);
+            tr2.appendChild(td2);
+            tbody.appendChild(tr2);
           }
         });
-        if(!tbody.children.length) {
+        table.appendChild(tbody);
+        if(!tbody.children.length){
           box.innerHTML="<p>暂无更新日志</p>";
           return;
         }
-        table.appendChild(tbody);
         box.appendChild(table);
-      } catch(e) {
+      }catch(e){
         console.error(e);
         box.innerHTML="<p>加载更新日志失败</p>";
       }
     }
-    async function loadFunctionIntro() {
+    async function loadFunctionIntro(){
       const box= document.getElementById('function-intro-content');
       box.innerHTML="<p>加载中...</p>";
-      try {
-        const url= `https://sheets.googleapis.com/v4/spreadsheets/${systemSpreadsheetId}/values/CN!E1:G?key=${systemApiKey}`;
-        const r= await fetch(url);
-        if(!r.ok) {
+      try{
+        let url= `https://sheets.googleapis.com/v4/spreadsheets/${SYSTEM_SPREADSHEET_ID}/values/CN!E1:G?key=${SYSTEM_API_KEY}`;
+        let r= await fetch(url);
+        if(!r.ok){
           box.innerHTML="<p>无法加载功能介绍</p>";
           return;
         }
-        const d= await r.json();
-        if(!d.values || d.values.length<2) {
+        let d= await r.json();
+        if(!d.values || d.values.length<2){
           box.innerHTML="<p>暂无功能介绍</p>";
           return;
         }
         box.innerHTML="";
-        const table= document.createElement('table');
-        const thead= document.createElement('thead');
-        const hr= document.createElement('tr');
-        const headers=["功能名称","功能描述","备注"];
-        headers.forEach(h=>{
-          const th= document.createElement('th');
-          th.textContent= h;
-          hr.appendChild(th);
+        let table= document.createElement('table');
+        let thead= document.createElement('thead');
+        let tr2= document.createElement('tr');
+        ["功能名称","功能描述","备注"].forEach(h=>{
+          let th= document.createElement('th');
+          th.textContent=h;
+          tr2.appendChild(th);
         });
-        thead.appendChild(hr);
+        thead.appendChild(tr2);
         table.appendChild(thead);
 
-        const tbody= document.createElement('tbody');
+        let tbody= document.createElement('tbody');
         d.values.slice(1).forEach(rowArr=>{
-          const fName= rowArr[0]? rowArr[0].trim():"";
-          const fDesc= rowArr[1]? rowArr[1].trim():"";
-          const fRem= rowArr[2]? rowArr[2].trim():"";
-          if(fName||fDesc||fRem) {
-            const tr= document.createElement('tr');
-            const td1= document.createElement('td'); td1.textContent=fName;
-            const td2= document.createElement('td'); td2.textContent=fDesc;
-            const td3= document.createElement('td'); td3.textContent=fRem;
-            tr.appendChild(td1);
-            tr.appendChild(td2);
-            tr.appendChild(td3);
-            tbody.appendChild(tr);
+          let fName= rowArr[0]? rowArr[0].trim():"";
+          let fDesc= rowArr[1]? rowArr[1].trim():"";
+          let fRem= rowArr[2]? rowArr[2].trim():"";
+          if(fName||fDesc||fRem){
+            let tr3= document.createElement('tr');
+            let td1= document.createElement('td'); td1.textContent=fName;
+            let td2= document.createElement('td'); td2.textContent=fDesc;
+            let td3= document.createElement('td'); td3.textContent=fRem;
+            tr3.appendChild(td1);
+            tr3.appendChild(td2);
+            tr3.appendChild(td3);
+            tbody.appendChild(tr3);
           }
         });
-        if(!tbody.children.length) {
+        table.appendChild(tbody);
+        if(!tbody.children.length){
           box.innerHTML="<p>暂无功能介绍</p>";
           return;
         }
-        table.appendChild(tbody);
         box.appendChild(table);
-      } catch(e) {
+      }catch(e){
         console.error(e);
         box.innerHTML="<p>加载功能介绍出错</p>";
       }
+    }
+
+    /********************************************
+     * 16) 本地存储
+     ********************************************/
+    function loadRandomOrderSetting(){
+      return localStorage.getItem('randomOrder')==='true';
+    }
+    function saveRandomOrderSetting(v){
+      localStorage.setItem('randomOrder', v?'true':'false');
+    }
+    function loadAutoNextSetting(){
+      return localStorage.getItem('autoNext')==='true';
+    }
+    function saveAutoNextSetting(v){
+      localStorage.setItem('autoNext', v?'true':'false');
+    }
+    function loadShowJapaneseSetting(){
+      return localStorage.getItem('showJapanese')==='true';
+    }
+    function saveShowJapaneseSetting(v){
+      localStorage.setItem('showJapanese', v?'true':'false');
+    }
+
+    function loadCurrentExam(){
+      let ex= localStorage.getItem('currentExam');
+      return ex ? JSON.parse(ex): null;
+    }
+    function saveCurrentExam(){
+      let cur= {
+        sheetName: currentSheetName,
+        currentQuestionIndex,
+        userAnswers,
+        questions,
+        randomOrder,
+        autoNext,
+        elapsedTime,
+        isBattleMode,
+        isMistakeMode,
+        isFavoritesMode,
+        showJapanese
+      };
+      localStorage.setItem('currentExam', JSON.stringify(cur));
+    }
+    function clearCurrentExam(){
+      localStorage.removeItem('currentExam');
+      document.getElementById('continue-exam-btn').style.display='none';
+    }
+
+    function loadFavorites(){
+      let f= localStorage.getItem('favorites');
+      return f? JSON.parse(f): {};
+    }
+    function saveFavorites(obj){
+      localStorage.setItem('favorites', JSON.stringify(obj));
+    }
+
+    function loadMistakesFromCache(){
+      let m= localStorage.getItem('mistakes');
+      return m? JSON.parse(m): {};
+    }
+    function saveMistakesToCache(obj){
+      localStorage.setItem('mistakes', JSON.stringify(obj));
+    }
+
+    function loadQuizHistory(){
+      let h= localStorage.getItem('quizHistory');
+      return h? JSON.parse(h): [];
+    }
+    function saveQuizHistory(h){
+      localStorage.setItem('quizHistory', JSON.stringify(h));
+    }
+
+    /********************************************
+     * 17) IP & 位置 => log
+     ********************************************/
+    async function getClientIPAndLogAccess(){
+      let visitTime= new Date().toLocaleString();
+      let deviceInfo= navigator.userAgent;
+      let ip="未知IP";
+      try{
+        let r= await fetch("https://api.ipify.org?format=json");
+        let d= await r.json();
+        ip= d.ip||"未知IP";
+      }catch(e){
+        console.warn("获取IP失败", e);
+      }
+      try{
+        let r2= await fetch(`https://ipapi.co/${ip}/json/`);
+        let d2= await r2.json();
+        if(d2 && d2.city && d2.country_name){
+          userLocation= `${d2.city}, ${d2.country_name}`;
+        }
+      }catch(e2){
+        console.warn("获取地理位置失败", e2);
+      }
+      logs.push({
+        type:'access',
+        time:visitTime,
+        location:userLocation,
+        detail:{
+          device: deviceInfo,
+          ip: ip
+        }
+      });
     }
   </script>
 </body>
