@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>商户入口首页</title>
+  <!-- 使用 Tailwind CSS 或其他框架 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-4">
+
+  <h1 class="text-2xl font-bold mb-4">商户入口</h1>
+  <!-- 这里放置类别按钮的容器 -->
+  <div id="category-container" class="space-y-2"></div>
+
+  <script>
+    // 1. 定义路由表相关信息
+    const ROUTE_SHEET_ID = "1zddtUI5LO9sD99Ab2bJKZKOFFQQyBO7ezEKOjnoyg7U";  // 路由表的SpreadId
+    const API_KEY = "AIzaSyApEcu1zgGEexoS_diT6PkCPQDWkX5Adhk";            // 全局API Key
+    const SHEET_NAME = "Sheet1";
+
+    // 2. 获取路由表数据
+    async function fetchRouteTable() {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${ROUTE_SHEET_ID}/values/${SHEET_NAME}?key=${API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.values; // 返回二维数组，每行是一个子数组
+    }
+
+    // 3. 渲染类别列表（去重）
+    function renderCategories(routeData) {
+      // routeData[0] 通常是表头，这里先把它过滤掉
+      const rows = routeData.slice(1);
+
+      // 从第4列（索引3）获取商户类别
+      const categories = rows.map(row => row[3]);
+      // 去重
+      const uniqueCategories = [...new Set(categories)];
+
+      // 按原顺序排列的话，只要去重时按出现顺序即可
+      const categoryContainer = document.getElementById("category-container");
+      uniqueCategories.forEach(category => {
+        const btn = document.createElement("button");
+        btn.textContent = category;
+        btn.className = "bg-blue-500 text-white px-4 py-2 rounded";
+        btn.onclick = () => {
+          // 点击后跳转到 category.html
+          window.location.href = `./pages/category.html?category=${encodeURIComponent(category)}`;
+        };
+        categoryContainer.appendChild(btn);
+      });
+    }
+
+    // 主流程
+    (async function main() {
+      const routeData = await fetchRouteTable();
+      renderCategories(routeData);
+    })();
+  </script>
+</body>
+</html>
