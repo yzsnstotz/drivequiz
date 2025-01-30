@@ -2745,7 +2745,7 @@ async function fetchAllBannerData(){
       primetext: row[14]||"",
       secondaryText: row[15]||"",
       title: row[9]||""
-    })).filter(x=>x.id && x.position);
+    })).filter(x=>x.id);
   } catch(e){
     console.error(e);
     return [];
