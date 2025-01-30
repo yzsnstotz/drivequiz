@@ -2943,35 +2943,42 @@ function getYouTubeThumbnailUrl(videoId, quality = 'maxresdefault') {
 
 // Function to check if thumbnail exists and fallback to lower quality if needed
 async function getValidYouTubeThumbnail(videoId) {
-  const qualities = ['maxresdefault', 'sddefault', 'hqdefault'];
-  
-  for (const quality of qualities) {
-      const thumbnailUrl = getYouTubeThumbnailUrl(videoId, quality);
-      try {
-          // 使用localDataManager检查和获取图片
-          const hasLocal = await localDataManager.hasLocalImage(thumbnailUrl, 'banner');
-          if (hasLocal) {
-              return thumbnailUrl;
-          }
-          
-          // 如果本地没有，尝试下载和缓存
-          const downloaded = await localDataManager.downloadAndCacheImage(thumbnailUrl, 'banner');
-          if (downloaded) {
-              return thumbnailUrl;
-          }
-      } catch (e) {
-          console.warn(`无法获取 ${quality} 缩略图:`, e);
-      }
-  }
-  
-  // 使用默认质量作为后备
-  const defaultUrl = getYouTubeThumbnailUrl(videoId, 'default');
-  try {
-      await localDataManager.downloadAndCacheImage(defaultUrl, 'banner');
-  } catch (e) {
-      console.warn('无法获取默认缩略图:', e);
-  }
-  return defaultUrl;
+    const qualities = ['maxresdefault', 'sddefault', 'hqdefault', 'default'];
+    
+    // 首先检查本地缓存
+    for (const quality of qualities) {
+        const thumbnailUrl = getYouTubeThumbnailUrl(videoId, quality);
+        try {
+            const hasLocal = await localDataManager.hasLocalImage(thumbnailUrl, 'banner');
+            if (hasLocal) {
+                return thumbnailUrl;
+            }
+        } catch (e) {
+            console.warn(`检查本地缓存失败 ${quality}:`, e);
+        }
+    }
+
+    // 并行下载所有质量的缩略图
+    const downloadPromises = qualities.map(quality => {
+        const thumbnailUrl = getYouTubeThumbnailUrl(videoId, quality);
+        return localDataManager.downloadAndCacheImage(thumbnailUrl, 'banner')
+            .then(success => ({ quality, url: thumbnailUrl, success }))
+            .catch(() => ({ quality, url: thumbnailUrl, success: false }));
+    });
+
+    try {
+        const results = await Promise.all(downloadPromises);
+        // 按质量顺序返回第一个成功下载的URL
+        const successResult = results.find(r => r.success);
+        if (successResult) {
+            return successResult.url;
+        }
+    } catch (e) {
+        console.warn('并行下载缩略图失败:', e);
+    }
+
+    // 如果所有尝试都失败，返回默认质量的URL
+    return getYouTubeThumbnailUrl(videoId, 'default');
 }
 
 
@@ -3700,11 +3707,15 @@ async initDB() {
     await this.ensureDbReady();
     if(!url) return false;
     try{
+      // 如果是YouTube缩略图，直接返回成功
+      if(url.includes('i.ytimg.com')) {
+        return true;
+      }
+      
       if(!/\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url)
         && !url.includes('drive.google.com')
         && !url.includes('github.com')
-        && !url.includes('raw=true')
-        && !url.includes('i.ytimg.com')){  // 添加YouTube图片域名检查
+        && !url.includes('raw=true')){
         console.error('无效图片URL格式:',url);
         return false;
       }
@@ -3725,7 +3736,7 @@ async initDB() {
         processedUrl= enc;
       }catch(ee){}
       // 为YouTube缩略图设置特殊的fetch选项
-      const isYouTubeImage = url.includes('i.ytimg.com');
+      /*const isYouTubeImage = url.includes('i.ytimg.com');
       const fetchOptions = {
         credentials: 'omit',
         headers: {
@@ -3733,57 +3744,19 @@ async initDB() {
           'User-Agent': 'Mozilla/5.0'
         },
         mode: isYouTubeImage ? 'no-cors' : 'cors'
+      };*/
+      const fetchOptions = {
+        credentials: 'omit',
+        headers: {
+          'Accept': 'image/*',
+          'User-Agent': 'Mozilla/5.0'
+        },
+        mode: 'cors'
       };
 
       let resp = await fetch(processedUrl, fetchOptions);
       
-      // 处理响应
-      if (isYouTubeImage && resp.type === 'opaque') {
-        // YouTube图片使用no-cors模式，我们需要验证响应
-        try {
-          let blob = await resp.blob();
-          // 验证blob是否为有效的图片数据
-          if (blob && blob.size > 0) {
-            // 创建一个临时的object URL来验证图片是否可用
-            const tempUrl = URL.createObjectURL(blob);
-            try {
-              await new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => {
-                  URL.revokeObjectURL(tempUrl);
-                  resolve();
-                };
-                img.onerror = () => {
-                  URL.revokeObjectURL(tempUrl);
-                  reject(new Error('无效的图片数据'));
-                };
-                img.src = tempUrl;
-              });
-              
-              // 图片验证成功，保存到IndexedDB
-              return new Promise(resolve => {
-                let storeName = (type === 'banner' ? this.stores.bannerImages : this.stores.quizImages);
-                let t = this.db.transaction(storeName, 'readwrite');
-                let s = t.objectStore(storeName);
-                let rq = s.put({url, blob, timestamp: Date.now()});
-                t.oncomplete = () => resolve(true);
-                t.onerror = e => {
-                  console.error('写入图片DB失败:', e);
-                  resolve(false);
-                };
-              });
-            } catch (error) {
-              console.warn('YouTube缩略图验证失败:', url, error);
-              return false;
-            }
-          }
-          console.warn('YouTube缩略图blob为空或大小为0:', url);
-          return false;
-        } catch (e) {
-          console.warn(`处理YouTube缩略图失败: ${e.message}`);
-          return false;
-        }
-      } else if (!resp.ok) {
+      if (!resp.ok) {
         throw new Error(`HTTP error! status:${resp.status}`);
       }
 
@@ -3792,7 +3765,8 @@ async initDB() {
         throw new Error('下载内容不是图片');
       }
 
-      let storeName= (type==='banner'? this.stores.bannerImages:this.stores.quizImages);
+      // 注释掉图片存储逻辑
+      /*let storeName= (type==='banner'? this.stores.bannerImages:this.stores.quizImages);
       return new Promise(resolve=>{
         let t= this.db.transaction(storeName,'readwrite');
         let s= t.objectStore(storeName);
@@ -3802,7 +3776,10 @@ async initDB() {
           console.error('写入图片DB失败:', e);
           resolve(false);
         };
-      });
+      });*/
+      
+      // 直接返回成功
+      return true;
     }catch(e){
       console.error('下载图片失败:', e.message);
       this.updateStatus='needUpdate';
