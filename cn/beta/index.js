@@ -1858,6 +1858,7 @@ async function startBattleGame() {
   document.getElementById('quiz-container').style.display = 'block';
   document.getElementById('battle-header').style.display = 'flex';
   document.getElementById('battle-loading-bar-wrap').style.display = 'block';
+  document.querySelector('.battle-info-container').style.display = 'flex';
 
   updateButtonsVisibility(true);
   updateNavigationVisibility(true);
@@ -2565,69 +2566,152 @@ function applySettingsAndClose(){
 // ==================================================
 // 9. 合宿生活 & 汽车周边(广告区)
 // ==================================================
-function showCampusLife(){
+async function showCampusLife(){
   hideAll();
   document.getElementById('campus-life-container').style.display='block';
-  const listDiv= document.getElementById('campus-life-list');
-  listDiv.innerHTML="";
-  let data= allBannerData.filter(x=> x.category==="校园周边");
+  const listDiv = document.getElementById('campus-life-list');
+  listDiv.innerHTML = "";
+  let data = allBannerData.filter(x => x.category === "校园周边");
   if(!data.length){
-    listDiv.innerHTML="<p>暂无校园周边数据</p>";
+    listDiv.innerHTML = "<p>暂无校园周边数据</p>";
     return;
   }
-  data.forEach(d=>{
-    let c= document.createElement('div');
-    c.className="life-item-card";
-    c.innerHTML=`
-      <div class="category-icon-container">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32">
-          ${
-            d.subCategory==='饭店'? '<path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/>' 
-            : d.subCategory==='物产店'? '<path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2z"/>' 
-            : '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>'
-          }
-        </svg>
-      </div>
-      <div class="merchant-type">${d.subCategory||'无子类'}</div>
-    `;
-    c.onclick=()=>{
-      const link= d.type==="abs"? ensureAbsoluteUrl(d.link): `./ads/pages/merchant.html?merchantId=${d.id}`;
-      window.open(link,"_blank");
-    };
-    listDiv.appendChild(c);
+
+  // 按子类分组
+  let groupMap = {};
+  data.forEach(item => {
+    const subCategory = item.subCategory || '其他';
+    if (!groupMap[subCategory]) groupMap[subCategory] = [];
+    groupMap[subCategory].push(item);
   });
+
+  // 按子类名称排序
+  let sortedSubCategories = Object.keys(groupMap).sort();
+
+  // 为每个子类创建一个slider组
+  for (const subCategory of sortedSubCategories) {
+    const items = groupMap[subCategory];
+    const groupDiv = document.createElement('div');
+    groupDiv.className = "slider-group";
+    groupDiv.innerHTML = `
+      <div class="slider-header">
+        <div class="slider-title">${subCategory}</div>
+        <div class="slider-primary-text">校园周边 - ${subCategory}</div>
+        <div class="slider-secondary-text">为您精选${items.length}家${subCategory}商户</div>
+      </div>
+    `;
+
+    const rowDiv = document.createElement('div');
+    rowDiv.className = "slider-row";
+
+    // 添加商户卡片
+    for (const item of items) {
+      const videoId = item.type === "abs" ? getYoutubeVideoId(item.link) : null;
+      const div = document.createElement('div');
+      div.className = "slider-item";
+      div.innerHTML = `
+        <div class="slider-item-content">
+          <div class="slider-image-wrapper">
+            <img src="${await localDataManager.getLocalImage(item.image, 'banner') || item.image}" 
+                 alt="${item.title || subCategory}" 
+                 loading="lazy" />
+            ${videoId ? `
+              <div class="video-indicator">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            ` : ''}
+          </div>
+          <div class="slider-text">${item.title || subCategory}</div>
+        </div>
+      `;
+
+      div.addEventListener('click', () => {
+        const link = item.type === "abs" ? ensureAbsoluteUrl(item.link) : `./ads/pages/merchant.html?merchantId=${item.id}`;
+        window.open(link, "_blank");
+      });
+
+      rowDiv.appendChild(div);
+    }
+
+    groupDiv.appendChild(rowDiv);
+    listDiv.appendChild(groupDiv);
+  }
 }
 
-function showCarSurrounding(){
+async function showCarSurrounding(){
   hideAll();
   document.getElementById('car-surrounding-container').style.display='block';
-  const listDiv= document.getElementById('car-surrounding-list');
-  listDiv.innerHTML="";
-  let data= allBannerData.filter(x=> x.category==="汽车周边");
+  const listDiv = document.getElementById('car-surrounding-list');
+  listDiv.innerHTML = "";
+  let data = allBannerData.filter(x => x.category === "汽车周边");
   if(!data.length){
-    listDiv.innerHTML="<p>暂无汽车周边数据</p>";
+    listDiv.innerHTML = "<p>暂无汽车周边数据</p>";
     return;
   }
-  data.forEach(d=>{
-    let c= document.createElement('div');
-    c.className="car-item-card";
-    c.innerHTML=`
-      <div class="category-icon-container">
-        <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32">
-          ${
-            d.subCategory==='汽车用品'?'<path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>' 
-            : '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>'
-          }
-        </svg>
-      </div>
-      <div class="merchant-type">${d.subCategory||'无子类'}</div>
-    `;
-    c.onclick=()=>{
-      const link= d.type==="abs"? ensureAbsoluteUrl(d.link): `./ads/pages/merchant.html?merchantId=${d.id}`;
-      window.open(link,"_blank");
-    };
-    listDiv.appendChild(c);
+
+  // 按子类分组
+  let groupMap = {};
+  data.forEach(item => {
+    const subCategory = item.subCategory || '其他';
+    if (!groupMap[subCategory]) groupMap[subCategory] = [];
+    groupMap[subCategory].push(item);
   });
+
+  // 按子类名称排序
+  let sortedSubCategories = Object.keys(groupMap).sort();
+
+  // 为每个子类创建一个slider组
+  for (const subCategory of sortedSubCategories) {
+    const items = groupMap[subCategory];
+    const groupDiv = document.createElement('div');
+    groupDiv.className = "slider-group";
+    groupDiv.innerHTML = `
+      <div class="slider-header">
+        <div class="slider-title">${subCategory}</div>
+        <div class="slider-primary-text">汽车周边 - ${subCategory}</div>
+        <div class="slider-secondary-text">为您精选${items.length}家${subCategory}商户</div>
+      </div>
+    `;
+
+    const rowDiv = document.createElement('div');
+    rowDiv.className = "slider-row";
+
+    // 添加商户卡片
+    for (const item of items) {
+      const videoId = item.type === "abs" ? getYoutubeVideoId(item.link) : null;
+      const div = document.createElement('div');
+      div.className = "slider-item";
+      div.innerHTML = `
+        <div class="slider-item-content">
+          <div class="slider-image-wrapper">
+            <img src="${await localDataManager.getLocalImage(item.image, 'banner') || item.image}" 
+                 alt="${item.title || subCategory}" 
+                 loading="lazy" />
+            ${videoId ? `
+              <div class="video-indicator">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            ` : ''}
+          </div>
+          <div class="slider-text">${item.title || subCategory}</div>
+        </div>
+      `;
+
+      div.addEventListener('click', () => {
+        const link = item.type === "abs" ? ensureAbsoluteUrl(item.link) : `./ads/pages/merchant.html?merchantId=${item.id}`;
+        window.open(link, "_blank");
+      });
+
+      rowDiv.appendChild(div);
+    }
+
+    groupDiv.appendChild(rowDiv);
+    listDiv.appendChild(groupDiv);
+  }
 }
 
 // ==================================================
@@ -2666,6 +2750,237 @@ async function fetchAllBannerData(){
     console.error(e);
     return [];
   }
+}
+
+// Video player component and handler functions
+function createVideoPlayer(url, onClose) {
+  const container = document.createElement('div');
+  container.className = 'video-player-container';
+  
+  const youtubeId = getYoutubeVideoId(url);
+  const isDirectVideo = ['.mp4', '.webm', '.ogg'].some(ext => 
+      url.toLowerCase().endsWith(ext)
+  );
+  
+  let playerHtml;
+  if (youtubeId) {
+      const embedUrl = createYouTubeEmbedUrl(youtubeId);
+      playerHtml = `
+          <iframe 
+              src="${embedUrl}"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              loading="lazy"
+          ></iframe>`;
+  } else if (isDirectVideo) {
+      playerHtml = `
+          <video controls playsinline preload="metadata">
+              <source src="${url}" type="video/mp4">
+              您的浏览器不支持视频播放
+          </video>`;
+  } else {
+      console.warn('Unsupported video URL format:', url);
+      return null;
+  }
+
+  container.innerHTML = `
+      <div class="video-player-overlay">
+          <div class="video-player-content">
+              <div class="video-player-header">
+                  <button class="video-close-btn" aria-label="关闭视频">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                      </svg>
+                  </button>
+              </div>
+              <div class="video-wrapper">
+                  ${playerHtml}
+              </div>
+          </div>
+      </div>
+  `;
+
+  // Add styles with performance optimizations
+  const style = document.createElement('style');
+  style.textContent = `
+      .video-player-container {
+          position: fixed;
+          inset: 0;
+          z-index: 100000;
+          background: rgba(0, 0, 0, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          backdrop-filter: blur(5px);
+          -webkit-backdrop-filter: blur(5px);
+      }
+      .video-player-overlay {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          will-change: transform;
+      }
+      .video-player-content {
+          width: 100%;
+          max-width: 800px;
+          background: #000;
+          border-radius: 12px;
+          overflow: hidden;
+          position: relative;
+          transform: translateZ(0);
+      }
+      .video-player-header {
+          padding: 8px;
+          text-align: right;
+          background: rgba(0, 0, 0, 0.5);
+          position: absolute;
+          inset: 0 0 auto 0;
+          z-index: 1;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+      }
+      .video-close-btn {
+          background: none;
+          border: none;
+          padding: 8px;
+          cursor: pointer;
+          color: white;
+          opacity: 0.8;
+          transition: opacity 0.2s;
+          touch-action: manipulation;
+      }
+      .video-close-btn:hover,
+      .video-close-btn:focus {
+          opacity: 1;
+      }
+      .video-close-btn svg {
+          width: 24px;
+          height: 24px;
+          display: block;
+      }
+      .video-wrapper {
+          position: relative;
+          padding-top: 56.25%;
+          background: #000;
+      }
+      .video-wrapper video,
+      .video-wrapper iframe {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          border: none;
+      }
+  `;
+  document.head.appendChild(style);
+
+  // Add event listeners with performance optimizations
+  const closeBtn = container.querySelector('.video-close-btn');
+  closeBtn.addEventListener('click', () => {
+      container.remove();
+      style.remove();
+      if (onClose) onClose();
+  }, { passive: true });
+
+  // Handle click outside with passive event listener
+  container.addEventListener('click', (e) => {
+      if (e.target === container || e.target.classList.contains('video-player-overlay')) {
+          closeBtn.click();
+      }
+  }, { passive: true });
+
+  return container;
+}
+
+// Function to safely create a YouTube embed URL with proper parameters
+function createYouTubeEmbedUrl(videoId) {
+  const params = new URLSearchParams({
+      autoplay: '1',
+      rel: '0',           // Don't show related videos
+      modestbranding: '1', // Minimal YouTube branding
+      enablejsapi: '1'     // Enable JavaScript API
+  });
+  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+}
+
+
+// Function to extract YouTube video ID from various YouTube URL formats
+function getYoutubeVideoId(url) {
+  if (!url) return null;
+  
+  try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes('youtu.be')) {
+          return urlObj.pathname.slice(1);
+      }
+      
+      const videoId = urlObj.searchParams.get('v');
+      if (videoId) return videoId;
+      
+      const embedMatch = urlObj.pathname.match(/^\/embed\/([^/]+)/);
+      if (embedMatch) return embedMatch[1];
+  } catch (e) {
+      console.warn('Invalid URL format:', url);
+  }
+  return null;
+}
+
+// Function to get YouTube thumbnail URL with different quality options
+function getYouTubeThumbnailUrl(videoId, quality = 'maxresdefault') {
+  //function getYouTubeThumbnailUrl(videoId, quality = 'maxresdefault') {
+  // Available qualities: 
+  // maxresdefault.jpg (1280x720)
+  // sddefault.jpg (640x480)
+  // hqdefault.jpg (480x360)
+  // mqdefault.jpg (320x180)
+  // default.jpg (120x90)
+  return `https://i.ytimg.com/vi/${videoId}/${quality}.jpg`;
+}
+
+
+// Function to check if thumbnail exists and fallback to lower quality if needed
+async function getValidYouTubeThumbnail(videoId) {
+  const qualities = ['maxresdefault', 'sddefault', 'hqdefault'];
+  
+  for (const quality of qualities) {
+      const thumbnailUrl = getYouTubeThumbnailUrl(videoId, quality);
+      try {
+          // 使用localDataManager检查和获取图片
+          const hasLocal = await localDataManager.hasLocalImage(thumbnailUrl, 'banner');
+          if (hasLocal) {
+              return thumbnailUrl;
+          }
+          
+          // 如果本地没有，尝试下载和缓存
+          const downloaded = await localDataManager.downloadAndCacheImage(thumbnailUrl, 'banner');
+          if (downloaded) {
+              return thumbnailUrl;
+          }
+      } catch (e) {
+          console.warn(`无法获取 ${quality} 缩略图:`, e);
+      }
+  }
+  
+  // 使用默认质量作为后备
+  const defaultUrl = getYouTubeThumbnailUrl(videoId, 'default');
+  try {
+      await localDataManager.downloadAndCacheImage(defaultUrl, 'banner');
+  } catch (e) {
+      console.warn('无法获取默认缩略图:', e);
+  }
+  return defaultUrl;
+}
+
+
+
+// Function to check if URL is a video
+function isVideoUrl(url) {
+  const videoExtensions = ['.mp4', '.webm', '.ogg'];
+  return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) || 
+         getYoutubeVideoId(url) !== null;
 }
 
 function ensureAbsoluteUrl(u){
@@ -2734,124 +3049,272 @@ async function loadBottomBanners(){
   }
 }
 
-async function loadSliderBanner(){
-  try{
-    const url= `https://sheets.googleapis.com/v4/spreadsheets/${ADS_SPREAD_ID}/values/${ADS_SLIDER_MANAGER_SHEET_NAME}?key=${ADS_API_KEY}`;
-    const r= await fetch(url);
-    if(!r.ok) throw new Error("无法获取Slider数据");
-    const d= await r.json();
-    if(!d.values|| d.values.length<=1) return;
-
-    const managerData= d.values.slice(1).reduce((acc,row)=>{
-      if(row[0] && row[0].startsWith('Slider-')){
-        acc[row[0]]={
-          title: row[1]||'',
-          primaryText: row[2]||'',
-          secondaryText: row[3]||''
-        };
+function handleSliderItemClick(item) {
+  if (item.type === "internal") {
+      switch (item.action) {
+          case "battle":
+              openBattleMode();
+              break;
+          case "favorites":
+              showFavorites();
+              break;
+          case "mistakes":
+              startMistakeQuiz();
+              break;
+          default:
+              console.warn('Unknown internal action:', item.action);
       }
-      return acc;
-    },{});
-
-    let sliderData= allBannerData.filter(x=> x.position.startsWith("slider-"));
-    if(!sliderData.length){
-      document.getElementById('slider-banner-container').style.display='none';
       return;
-    }
-    document.getElementById('slider-banner-container').style.display='block';
+  }
 
-    let groupMap={};
-    sliderData.forEach(item=>{
-      let suf= item.position.replace('slider-','');
-      if(!groupMap[suf]) groupMap[suf]=[];
-      groupMap[suf].push(item);
-    });
-    let container= document.getElementById('slider-banner-container');
-    container.innerHTML="";
-    let sortedKeys= Object.keys(groupMap).sort((a,b)=> +a- +b);
-    for(const k of sortedKeys){
-      let arr= groupMap[k];
-      let sliderKey= `Slider-${k}`;
-      let mg= managerData[sliderKey]||{};
-      let groupDiv= document.createElement('div');
-      groupDiv.className="slider-group";
-      groupDiv.innerHTML=`
-        <div class="slider-header">
-          <div class="slider-title">${mg.title || sliderKey}</div>
-          ${mg.primaryText? `<div class="slider-primary-text">${mg.primaryText}</div>`:''}
-          ${mg.secondaryText? `<div class="slider-secondary-text">${mg.secondaryText}</div>`:''}
-        </div>
-      `;
-      let rowDiv= document.createElement('div');
-      rowDiv.className="slider-row";
+  const url = item.type === "abs" ? 
+      ensureAbsoluteUrl(item.link) : 
+      `./ads/pages/merchant.html?merchantId=${item.id}`;
 
-      for(const item of arr){
-        if(item.image){
-          await localDataManager.downloadAndCacheImage(item.image,'banner');
-        }
-        let linkUrl= item.type==="abs"? ensureAbsoluteUrl(item.link): `./ads/pages/merchant.html?merchantId=${item.id}`;
-        let localURL= item.image? await localDataManager.getLocalImage(item.image,'banner'):null;
-        let imgSrc= localURL|| item.image;
-        let div= document.createElement('div');
-        div.className="slider-item";
-        div.innerHTML=`
-          <a href="${linkUrl}" target="_blank">
-            <img src="${imgSrc}" alt="slider广告" />
-            <div class="slider-text">${item.title||""}</div>
-          </a>
-        `;
-        rowDiv.appendChild(div);
+  if (item.type === "abs" && isVideoUrl(url)) {
+      const player = createVideoPlayer(url);
+      if (player) {
+          document.body.appendChild(player);
+      } else {
+          window.open(url, "_blank");
       }
-      groupDiv.appendChild(rowDiv);
-      container.appendChild(groupDiv);
-    }
-  } catch(e){
-    console.error('加载Slider失败:', e);
-    document.getElementById('slider-banner-container').style.display='none';
+  } else {
+      window.open(url, "_blank");
   }
 }
 
-async function loadPopupAds(){
-  if(!allBannerData.length){
-    allBannerData= await fetchAllBannerData();
+
+async function loadSliderBanner() {
+  try {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${ADS_SPREAD_ID}/values/${ADS_SLIDER_MANAGER_SHEET_NAME}?key=${ADS_API_KEY}`;
+      const r = await fetch(url);
+      if (!r.ok) throw new Error("无法获取Slider数据");
+      const d = await r.json();
+      if (!d.values || d.values.length <= 1) return;
+
+      const managerData = d.values.slice(1).reduce((acc, row) => {
+          if (row[0] && row[0].startsWith('Slider-')) {
+              acc[row[0]] = {
+                  title: row[1] || '',
+                  primaryText: row[2] || '',
+                  secondaryText: row[3] || ''
+              };
+          }
+          return acc;
+      }, {});
+
+      let sliderData = allBannerData.filter(x => x.position.startsWith("slider-"));
+      if (!sliderData.length) {
+          document.getElementById('slider-banner-container').style.display = 'none';
+          return;
+      }
+      document.getElementById('slider-banner-container').style.display = 'block';
+
+      // Process each slider item
+      for (const item of sliderData) {
+          if (item.type === "abs" && item.link) {
+              const videoId = getYoutubeVideoId(item.link);
+              if (videoId) {
+                  try {
+                      // Get valid thumbnail URL
+                      const thumbnailUrl = await getValidYouTubeThumbnail(videoId);
+                      if (thumbnailUrl) {
+                          // Update the item's image property
+                          item.image = thumbnailUrl;
+                      }
+                  } catch (error) {
+                      console.warn(`无法处理视频 ${videoId} 的缩略图:`, error);
+                      // 使用默认图片或占位图
+                      item.image = './src/images/default-thumbnail.webp';
+                  }
+              }
+          }
+      }
+
+      let groupMap = {};
+      sliderData.forEach(item => {
+          let suf = item.position.replace('slider-', '');
+          if (!groupMap[suf]) groupMap[suf] = [];
+          groupMap[suf].push(item);
+      });
+
+      let container = document.getElementById('slider-banner-container');
+      container.innerHTML = "";
+      
+      let sortedKeys = Object.keys(groupMap).sort((a, b) => +a - +b);
+      for (const k of sortedKeys) {
+          let arr = groupMap[k];
+          let sliderKey = `Slider-${k}`;
+          let mg = managerData[sliderKey] || {};
+          let groupDiv = document.createElement('div');
+          groupDiv.className = "slider-group";
+          groupDiv.innerHTML = `
+              <div class="slider-header">
+                  <div class="slider-title">${mg.title || sliderKey}</div>
+                  ${mg.primaryText ? `<div class="slider-primary-text">${mg.primaryText}</div>` : ''}
+                  ${mg.secondaryText ? `<div class="slider-secondary-text">${mg.secondaryText}</div>` : ''}
+              </div>
+          `;
+          let rowDiv = document.createElement('div');
+          rowDiv.className = "slider-row";
+
+          for (const item of arr) {
+              const videoId = item.type === "abs" ? getYoutubeVideoId(item.link) : null;
+              let div = document.createElement('div');
+              div.className = "slider-item";
+              
+              // Add video indicator if it's a YouTube link
+              const isVideo = videoId !== null;
+              div.innerHTML = `
+                  <div class="slider-item-content">
+                      <div class="slider-image-wrapper">
+                          <img src="${await localDataManager.getLocalImage(item.image, 'banner') || item.image}" 
+                               alt="${item.title || '视频缩略图'}"
+                               loading="lazy" />
+                          ${isVideo ? `
+                              <div class="video-indicator">
+                                  <svg viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M8 5v14l11-7z"/>
+                                  </svg>
+                              </div>
+                          ` : ''}
+                      </div>
+                      <div class="slider-text">${item.title || ""}</div>
+                  </div>
+              `;
+
+              div.addEventListener('click', () => handleSliderItemClick(item));
+              rowDiv.appendChild(div);
+          }
+          groupDiv.appendChild(rowDiv);
+          container.appendChild(groupDiv);
+      }
+
+      // Add styles for video indicator
+      const style = document.createElement('style');
+      style.textContent = `
+          .slider-image-wrapper {
+              position: relative;
+              width: 100%;
+              height: 100%;
+          }
+          .video-indicator {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background: rgba(0, 0, 0, 0.7);
+              border-radius: 50%;
+              width: 48px;
+              height: 48px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              pointer-events: none;
+          }
+          .video-indicator svg {
+              width: 24px;
+              height: 24px;
+          }
+          .slider-item:hover .video-indicator {
+              background: rgba(0, 0, 0, 0.8);
+              transform: translate(-50%, -50%) scale(1.1);
+              transition: all 0.2s ease;
+          }
+      `;
+      document.head.appendChild(style);
+
+  } catch (e) {
+      console.error('加载Slider失败:', e);
+      document.getElementById('slider-banner-container').style.display = 'none';
   }
-  let popupData= allBannerData.filter(x=> x.position==="popup");
-  if(!popupData.length){
-    document.getElementById('popup-container').style.display='none';
-    return;
-  }
-  const p= popupData[0];
-  document.getElementById('popup-container').style.display='block';
-  document.getElementById('popup-state1').style.display='block';
-  document.getElementById('popup-state2').style.display='none';
-
-  if(p.image){
-    await localDataManager.downloadAndCacheImage(p.image,'banner');
-  }
-  let localURL= p.image? await localDataManager.getLocalImage(p.image,'banner'): null;
-  let imgSrc= localURL|| p.image;
-
-  document.getElementById('popup-diamond').src= imgSrc;
-  document.getElementById('popup-small-title').textContent= p.title;
-  document.getElementById('popup-small-secondary').textContent= p.secondaryText;
-
-  document.getElementById('popup-full-image').src= imgSrc;
-  document.getElementById('popup-full-title').textContent= p.title;
-  document.getElementById('popup-full-prime').textContent= p.primetext;
-  document.getElementById('popup-action-btn').textContent= p.btntext;
-  document.getElementById('popup-full-secondary').textContent= p.secondaryText;
-
-  document.getElementById('popup-action-btn').onclick= ()=>{
-    const url= p.type==="abs"? ensureAbsoluteUrl(p.link):`./ads/pages/merchant.html?merchantId=${p.id}`;
-    window.open(url,"_blank");
-  };
-
-  document.getElementById('popup-state1').onclick=(e)=>{
-    if(e.target.closest('.popup-close-btn')) return;
-    document.getElementById('popup-state1').style.display='none';
-    document.getElementById('popup-state2').style.display='block';
-  };
 }
+
+function handlePopupAction(popupData) {
+  if (popupData.type === "internal") {
+      switch (popupData.link) {
+          case "battle":
+              closePopup();
+              openBattleMode();
+              break;
+          case "favorites":
+              closePopup();
+              showFavorites();
+              break;
+          case "mistakes":
+              closePopup();
+              startMistakeQuiz();
+              break;
+          default:
+              console.warn('Unknown internal action:', popupData.link);
+      }
+      return;
+  }
+
+  const url = popupData.type === "abs" ? 
+      ensureAbsoluteUrl(popupData.link) : 
+      `./ads/pages/merchant.html?merchantId=${popupData.id}`;
+
+  if (popupData.type === "abs" && isVideoUrl(url)) {
+      closePopup();
+      const player = createVideoPlayer(url);
+      if (player) {
+          document.body.appendChild(player);
+      } else {
+          window.open(url, "_blank");
+      }
+  } else {
+      window.open(url, "_blank");
+  }
+}
+
+async function loadPopupAds() {
+  if (!allBannerData.length) {
+      allBannerData = await fetchAllBannerData();
+  }
+  
+  let popupData = allBannerData.filter(x => x.position === "popup");
+  if (!popupData.length) {
+      document.getElementById('popup-container').style.display = 'none';
+      return;
+  }
+  
+  const p = popupData[0];
+  document.getElementById('popup-container').style.display = 'block';
+  document.getElementById('popup-state1').style.display = 'block';
+  document.getElementById('popup-state2').style.display = 'none';
+
+  if (p.image) {
+      await localDataManager.downloadAndCacheImage(p.image, 'banner');
+  }
+  
+  let localURL = p.image ? await localDataManager.getLocalImage(p.image, 'banner') : null;
+  let imgSrc = localURL || p.image;
+
+  // Set up small popup state
+  document.getElementById('popup-diamond').src = imgSrc;
+  document.getElementById('popup-small-title').textContent = p.title;
+  document.getElementById('popup-small-secondary').textContent = p.secondaryText;
+
+  // Set up large popup state
+  document.getElementById('popup-full-image').src = imgSrc;
+  document.getElementById('popup-full-title').textContent = p.title;
+  document.getElementById('popup-full-prime').textContent = p.primetext;
+  document.getElementById('popup-action-btn').textContent = p.btntext;
+  document.getElementById('popup-full-secondary').textContent = p.secondaryText;
+
+  // Small popup click handler - always expands to large popup
+  document.getElementById('popup-state1').onclick = (e) => {
+      if (e.target.closest('.popup-close-btn')) return;
+      document.getElementById('popup-state1').style.display = 'none';
+      document.getElementById('popup-state2').style.display = 'block';
+  };
+
+  // Action button click handler - handles both internal and external actions
+  document.getElementById('popup-action-btn').onclick = () => handlePopupAction(p);
+}
+
 function closePopup(){
   document.getElementById('popup-container').style.display='none';
 }
@@ -3240,7 +3703,8 @@ async initDB() {
       if(!/\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url)
         && !url.includes('drive.google.com')
         && !url.includes('github.com')
-        && !url.includes('raw=true')){
+        && !url.includes('raw=true')
+        && !url.includes('i.ytimg.com')){  // 添加YouTube图片域名检查
         console.error('无效图片URL格式:',url);
         return false;
       }
@@ -3260,10 +3724,73 @@ async initDB() {
         if(query) enc+= '?'+ query;
         processedUrl= enc;
       }catch(ee){}
-      let resp= await fetch(processedUrl,{credentials:'omit',headers:{'Accept':'image/*'}});
-      if(!resp.ok) throw new Error(`HTTP error! status:${resp.status}`);
-      let blob= await resp.blob();
-      if(!blob.type.startsWith('image/')) throw new Error('下载内容不是图片');
+      // 为YouTube缩略图设置特殊的fetch选项
+      const isYouTubeImage = url.includes('i.ytimg.com');
+      const fetchOptions = {
+        credentials: 'omit',
+        headers: {
+          'Accept': 'image/*',
+          'User-Agent': 'Mozilla/5.0'
+        },
+        mode: isYouTubeImage ? 'no-cors' : 'cors'
+      };
+
+      let resp = await fetch(processedUrl, fetchOptions);
+      
+      // 处理响应
+      if (isYouTubeImage && resp.type === 'opaque') {
+        // YouTube图片使用no-cors模式，我们需要验证响应
+        try {
+          let blob = await resp.blob();
+          // 验证blob是否为有效的图片数据
+          if (blob && blob.size > 0) {
+            // 创建一个临时的object URL来验证图片是否可用
+            const tempUrl = URL.createObjectURL(blob);
+            try {
+              await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                  URL.revokeObjectURL(tempUrl);
+                  resolve();
+                };
+                img.onerror = () => {
+                  URL.revokeObjectURL(tempUrl);
+                  reject(new Error('无效的图片数据'));
+                };
+                img.src = tempUrl;
+              });
+              
+              // 图片验证成功，保存到IndexedDB
+              return new Promise(resolve => {
+                let storeName = (type === 'banner' ? this.stores.bannerImages : this.stores.quizImages);
+                let t = this.db.transaction(storeName, 'readwrite');
+                let s = t.objectStore(storeName);
+                let rq = s.put({url, blob, timestamp: Date.now()});
+                t.oncomplete = () => resolve(true);
+                t.onerror = e => {
+                  console.error('写入图片DB失败:', e);
+                  resolve(false);
+                };
+              });
+            } catch (error) {
+              console.warn('YouTube缩略图验证失败:', url, error);
+              return false;
+            }
+          }
+          console.warn('YouTube缩略图blob为空或大小为0:', url);
+          return false;
+        } catch (e) {
+          console.warn(`处理YouTube缩略图失败: ${e.message}`);
+          return false;
+        }
+      } else if (!resp.ok) {
+        throw new Error(`HTTP error! status:${resp.status}`);
+      }
+
+      let blob = await resp.blob();
+      if (!blob.type.startsWith('image/')) {
+        throw new Error('下载内容不是图片');
+      }
 
       let storeName= (type==='banner'? this.stores.bannerImages:this.stores.quizImages);
       return new Promise(resolve=>{
