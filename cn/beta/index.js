@@ -801,6 +801,30 @@ function updateQuestionState(q, favoriteBtn) {
   if (favorites[favKey]) favoriteBtn.classList.add('favorited');
 }
 
+
+// Helper function to ensure image is loaded
+async function ensureImageLoaded(imageUrl) {
+  if (!imageUrl) return null;
+
+  try {
+      // Check local storage first
+      const localUrl = await localDataManager.getLocalImage(imageUrl);
+      if (localUrl) return localUrl;
+
+      // If not in local storage, download and cache
+      const downloaded = await localDataManager.downloadAndCacheImage(imageUrl);
+      if (downloaded) {
+          return await localDataManager.getLocalImage(imageUrl);
+      }
+      return null;
+  } catch (error) {
+      console.warn(`Image loading failed: ${imageUrl}`, error);
+      return null;
+  }
+}
+
+
+
 /**
  * 优化后的题目展示函数
  */
@@ -820,27 +844,92 @@ async function loadQuestion() {
   }
   questionElem.textContent = text;
 
-  // 处理图片加载
+  // 重置图片容器
   imageContainer.style.display = 'none';
   imageContainer.innerHTML = "";
 
+  // 处理图片加载
   if (q.image) {
-      imageContainer.style.display = 'flex';
-      imageContainer.textContent = "加载中...";
+      try {
+          // 显示加载状态
+          imageContainer.style.display = 'flex';
+          imageContainer.textContent = "加载中...";
 
-      const localUrl = await ensureImageLoaded(q.image);
-      if (localUrl) {
-          const img = new Image();
-          img.src = localUrl;
-          img.onload = () => {
-              imageContainer.innerHTML = "";
-              imageContainer.appendChild(img);
-          };
-          img.onerror = () => {
-              imageContainer.style.display = 'none';
-          };
-      } else {
+          // 尝试从本地存储获取图片
+          const localUrl = await localDataManager.getLocalImage(q.image);
+          
+          if (localUrl) {
+              console.log('Using local image:', q.image);
+              const img = new Image();
+              
+              // 设置图片加载事件处理
+              img.onload = () => {
+                  console.log('Local image loaded successfully:', q.image);
+                  imageContainer.innerHTML = "";
+                  imageContainer.appendChild(img);
+                  imageContainer.style.display = 'flex';
+              };
+              
+              img.onerror = async (error) => {
+                  console.error('Local image load failed:', q.image, error);
+                  // 如果本地加载失败，尝试重新下载
+                  try {
+                      const downloaded = await localDataManager.downloadAndCacheImage(q.image);
+                      if (downloaded) {
+                          const newLocalUrl = await localDataManager.getLocalImage(q.image);
+                          if (newLocalUrl) {
+                              img.src = newLocalUrl;
+                              return;
+                          }
+                      }
+                  } catch (e) {
+                      console.error('Image recovery failed:', e);
+                  }
+                  imageContainer.style.display = 'none';
+                  imageContainer.innerHTML = "";
+              };
+
+              // 设置图片源
+              img.src = localUrl;
+              
+              // 添加超时处理
+              setTimeout(() => {
+                  if (imageContainer.textContent === "加载中...") {
+                      console.warn('Image load timeout:', q.image);
+                      imageContainer.style.display = 'none';
+                      imageContainer.innerHTML = "";
+                  }
+              }, 10000); // 10秒超时
+              
+          } else {
+              console.log('Local image not found, downloading:', q.image);
+              // 尝试下载并缓存图片
+              const downloaded = await localDataManager.downloadAndCacheImage(q.image);
+              if (downloaded) {
+                  const newLocalUrl = await localDataManager.getLocalImage(q.image);
+                  if (newLocalUrl) {
+                      const img = new Image();
+                      img.onload = () => {
+                          imageContainer.innerHTML = "";
+                          imageContainer.appendChild(img);
+                          imageContainer.style.display = 'flex';
+                      };
+                      img.onerror = () => {
+                          imageContainer.style.display = 'none';
+                          imageContainer.innerHTML = "";
+                      };
+                      img.src = newLocalUrl;
+                  } else {
+                      throw new Error('Failed to get local URL after download');
+                  }
+              } else {
+                  throw new Error('Failed to download image');
+              }
+          }
+      } catch (error) {
+          console.error('Image handling error:', error);
           imageContainer.style.display = 'none';
+          imageContainer.innerHTML = "";
       }
   }
 
@@ -1222,51 +1311,56 @@ function showBattleIntroPopup(){
  * @returns {Promise<Array>} Array of questions
  */
 async function loadQuestionsUnified(mode, options = {}) {
-    console.log(`=== 开始加载题目 (${mode}模式) ===`);
-    let loadedQuestions = [];
+  console.log(`=== Starting question loading (${mode} mode) ===`);
+  let loadedQuestions = [];
 
-    try {
-        switch (mode) {
-            case 'normal':
-                loadedQuestions = await loadNormalModeQuestions(options.categoryObj);
-                break;
-            case 'battle':
-                loadedQuestions = await loadBattleModeQuestions();
-                break;
-            case 'favorite':
-                loadedQuestions = await loadFavoriteModeQuestions(options.favorites);
-                break;
-            case 'mistake':
-                loadedQuestions = await loadMistakeModeQuestions(options.mistakes);
-                break;
-            default:
-                throw new Error('未知的加载模式');
-        }
+  try {
+      // Step 1: Load questions based on mode
+      switch (mode) {
+          case 'normal':
+              loadedQuestions = await loadNormalModeQuestions(options.categoryObj);
+              break;
+          case 'battle':
+              loadedQuestions = await loadBattleModeQuestions();
+              break;
+          case 'favorite':
+              loadedQuestions = await loadFavoriteModeQuestions(options.favorites);
+              break;
+          case 'mistake':
+              loadedQuestions = await loadMistakeModeQuestions(options.mistakes);
+              break;
+          default:
+              throw new Error('Unknown loading mode');
+      }
 
-        if (!loadedQuestions || !Array.isArray(loadedQuestions) || loadedQuestions.length === 0) {
-            throw new Error('没有找到可用的题目');
-        }
+      if (!loadedQuestions || !Array.isArray(loadedQuestions) || loadedQuestions.length === 0) {
+          throw new Error('No questions available');
+      }
 
-        // Apply common processing
-        loadedQuestions = await processLoadedQuestions(loadedQuestions, mode);
-        
-        // Ensure questions array is valid before preloading images
-        if (Array.isArray(loadedQuestions) && loadedQuestions.length > 0) {
-            // Start preloading images
-            await prepareFirstQuestionImage(loadedQuestions[0]);
-            if (loadedQuestions.length > 1) {
-                startBackgroundImagePreload(loadedQuestions.slice(1));
-            }
-        } else {
-            throw new Error('题目数据格式错误');
-        }
+      // Step 2: Process loaded questions
+      loadedQuestions = await processLoadedQuestions(loadedQuestions, mode);
 
-        return loadedQuestions;
-    } catch (error) {
-        console.error(`加载题目失败 (${mode}模式):`, error);
-        throw error;
-    }
+      // Step 3: Preload images
+      if (Array.isArray(loadedQuestions) && loadedQuestions.length > 0) {
+          // Start with first question's image
+          if (loadedQuestions[0].image) {
+              await ensureImageLoaded(loadedQuestions[0].image);
+          }
+
+          // Background load remaining images
+          if (loadedQuestions.length > 1) {
+              const remainingQuestions = loadedQuestions.slice(1);
+              startBackgroundImagePreload(remainingQuestions);
+          }
+      }
+
+      return loadedQuestions;
+  } catch (error) {
+      console.error(`Question loading failed (${mode} mode):`, error);
+      throw error;
+  }
 }
+
 
 /**
  * Load questions for normal quiz mode
@@ -1516,17 +1610,34 @@ function groupMistakesBySheet(mistakes) {
  * Process loaded questions with common logic
  */
 async function processLoadedQuestions(questions, mode) {
-    // Add Japanese content if needed
-    if (showJapanese) {
-        questions = await addJapaneseContent(questions);
-    }
+  // Add Japanese content if needed
+  if (showJapanese) {
+      questions = await addJapaneseContent(questions);
+  }
 
-    // Shuffle if random order is enabled (except for battle mode which handles its own shuffling)
-    if (randomOrder && mode !== 'battle') {
-        questions = shuffle(questions);
-    }
+  // Validate each question's structure
+  questions = questions.map(q => ({
+      ...q,
+      image: q.image || '',                 // Ensure image property exists
+      question: q.question || '无题目',      // Ensure question text exists
+      answer: q.answer || '',               // Ensure answer exists
+      explanation: q.explanation || '',      // Ensure explanation exists
+      jpQuestion: q.jpQuestion || '',       // Ensure Japanese properties exist
+      jpExplanation: q.jpExplanation || ''
+  }));
 
-    return questions;
+  // Filter out invalid questions
+  questions = questions.filter(q => 
+      q.question !== '无题目' && 
+      (q.answer === '⭕' || q.answer === '❌')
+  );
+
+  // Shuffle if random order is enabled (except for battle mode)
+  if (randomOrder && mode !== 'battle') {
+      questions = shuffle(questions);
+  }
+
+  return questions;
 }
 
 // 3. Add missing Japanese content handling function
@@ -1828,20 +1939,23 @@ async function backgroundImagePreload(questions) {
  * @param {Array} questions Array of questions to preload images for
  */
 async function startBackgroundImagePreload(questions) {
-  // Reset progress tracking
-  battleImageLoadingProgress = {
-      total: questions.filter(q => q.image).length,
-      loaded: 0,
-      currentIndex: 0
-  };
+  const batchSize = 3; // Process 3 images at a time
+  let currentIndex = 0;
 
-  // Start with current question's image
-  if (currentQuestionIndex >= 0 && questions[currentQuestionIndex]?.image) {
-      await preloadQuestionImage(questions[currentQuestionIndex]);
+  while (currentIndex < questions.length) {
+      const batch = questions
+          .slice(currentIndex, currentIndex + batchSize)
+          .filter(q => q.image);
+
+      await Promise.all(
+          batch.map(question => ensureImageLoaded(question.image))
+      );
+
+      currentIndex += batchSize;
+      
+      // Small delay between batches to prevent overwhelming the system
+      await new Promise(resolve => setTimeout(resolve, 100));
   }
-
-  // Then load the rest in background
-  backgroundImagePreload(questions);
 }
 
 // 大乱斗开始
@@ -2943,42 +3057,60 @@ function getYouTubeThumbnailUrl(videoId, quality = 'maxresdefault') {
 
 // Function to check if thumbnail exists and fallback to lower quality if needed
 async function getValidYouTubeThumbnail(videoId) {
-    const qualities = ['maxresdefault', 'sddefault', 'hqdefault', 'default'];
-    
-    // 首先检查本地缓存
-    for (const quality of qualities) {
-        const thumbnailUrl = getYouTubeThumbnailUrl(videoId, quality);
-        try {
-            const hasLocal = await localDataManager.hasLocalImage(thumbnailUrl, 'banner');
-            if (hasLocal) {
-                return thumbnailUrl;
-            }
-        } catch (e) {
-            console.warn(`检查本地缓存失败 ${quality}:`, e);
-        }
-    }
+  if (!videoId) return null;
+  
+  // Define thumbnail qualities in order of preference
+  const qualities = ['maxresdefault', 'sddefault', 'hqdefault', 'default'];
+  
+  // First check if we have any cached versions
+  for (const quality of qualities) {
+      const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/${quality}.jpg`;
+      try {
+          const hasLocal = await localDataManager.hasLocalImage(thumbnailUrl, 'banner');
+          if (hasLocal) {
+              return thumbnailUrl;
+          }
+      } catch (e) {
+          console.warn(`Failed to check local cache for ${quality}:`, e);
+      }
+  }
 
-    // 并行下载所有质量的缩略图
-    const downloadPromises = qualities.map(quality => {
-        const thumbnailUrl = getYouTubeThumbnailUrl(videoId, quality);
-        return localDataManager.downloadAndCacheImage(thumbnailUrl, 'banner')
-            .then(success => ({ quality, url: thumbnailUrl, success }))
-            .catch(() => ({ quality, url: thumbnailUrl, success: false }));
-    });
+  // If no cached version exists, try to fetch using no-cors mode
+  for (const quality of qualities) {
+      const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/${quality}.jpg`;
+      try {
+          const response = await fetch(thumbnailUrl, {
+              mode: 'no-cors',
+              cache: 'no-cache',
+              credentials: 'omit',
+              headers: {
+                  'Accept': 'image/webp,image/apng,image/*'
+              }
+          });
+          
+          // Since no-cors mode doesn't allow us to read the response,
+          // we'll create a blob URL and try to load it as an image
+          const testImage = new Image();
+          const loadPromise = new Promise((resolve, reject) => {
+              testImage.onload = () => resolve(true);
+              testImage.onerror = () => reject(new Error('Image load failed'));
+          });
+          
+          testImage.src = thumbnailUrl;
+          await loadPromise;
+          
+          // If we get here, the image loaded successfully
+          await localDataManager.downloadAndCacheImage(thumbnailUrl, 'banner');
+          return thumbnailUrl;
+          
+      } catch (e) {
+          console.warn(`Failed to fetch ${quality} thumbnail:`, e);
+          continue;
+      }
+  }
 
-    try {
-        const results = await Promise.all(downloadPromises);
-        // 按质量顺序返回第一个成功下载的URL
-        const successResult = results.find(r => r.success);
-        if (successResult) {
-            return successResult.url;
-        }
-    } catch (e) {
-        console.warn('并行下载缩略图失败:', e);
-    }
-
-    // 如果所有尝试都失败，返回默认质量的URL
-    return getYouTubeThumbnailUrl(videoId, 'default');
+  // If all attempts fail, return null
+  return null;
 }
 
 
@@ -3590,386 +3722,391 @@ async function updateQuizData(category) {
 // 14. LocalDataManager
 // ==================================================
 class LocalDataManager {
-  constructor(){
-    this.dbPromise = null;
-    this.versionKey='localImagesVersion';
-    this.updateStatus='latest';
-    this.dbName='zalemCache';
-    this.stores={
-      quizImages:'quizImages',
-      bannerImages:'bannerImages',
-      quizTest:'quizTest'
-    };
-    this.db=null;
-    this.initDB();
+  constructor() {
+      this.dbPromise = null;
+      this.versionKey = 'localImagesVersion';
+      this.updateStatus = 'latest';
+      this.dbName = 'zalemCache';
+      this.stores = {
+          quizImages: 'quizImages',
+          bannerImages: 'bannerImages',
+          quizTest: 'quizTest'
+      };
+      this.db = null;
+      this.initDB();
   }
 
   async ensureDbReady() {
-    if (!this.dbPromise) {
-        this.dbPromise = this.initDB();
-    }
-    this.db = await this.dbPromise;
-    return this.db;
-}
+      if (!this.dbPromise) {
+          this.dbPromise = this.initDB();
+      }
+      this.db = await this.dbPromise;
+      return this.db;
+  }
 
-
-async initDB() {
-  return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, 1);
-      
-      request.onerror = (event) => {
-          console.error('数据库打开失败:', event.target.error);
-          reject(event.target.error);
-      };
-      
-      request.onsuccess = (event) => {
-          const db = event.target.result;
+  async initDB() {
+      return new Promise((resolve, reject) => {
+          const request = indexedDB.open(this.dbName, 1);
           
-          // Add error handler for the database
-          db.onerror = (event) => {
-              console.error('数据库错误:', event.target.error);
+          request.onerror = (event) => {
+              console.error('数据库打开失败:', event.target.error);
+              reject(event.target.error);
           };
           
-          resolve(db);
-      };
-      
-      request.onupgradeneeded = (event) => {
-          const db = event.target.result;
+          request.onsuccess = (event) => {
+              const db = event.target.result;
+              db.onerror = (event) => {
+                  console.error('数据库错误:', event.target.error);
+              };
+              resolve(db);
+          };
           
-          // Create stores if they don't exist
-          if (!db.objectStoreNames.contains(this.stores.quizImages)) {
-              db.createObjectStore(this.stores.quizImages, { keyPath: 'url' });
-          }
-          if (!db.objectStoreNames.contains(this.stores.bannerImages)) {
-              db.createObjectStore(this.stores.bannerImages, { keyPath: 'url' });
-          }
-          if (!db.objectStoreNames.contains(this.stores.quizTest)) {
-              db.createObjectStore(this.stores.quizTest, { keyPath: 'id' });
-          }
-      };
-  });
-  }
-
-
-  getLocalVersion(){
-    return localStorage.getItem(this.versionKey)||'';
-  }
-  saveLocalVersion(v){
-    localStorage.setItem(this.versionKey,v);
-  }
-  
-
-  async hasLocalImage(url, type='quiz'){
-    await this.ensureDbReady();
-    if(!url) return false;
-    return new Promise(res=>{
-      const storeName= (type==='banner'? this.stores.bannerImages:this.stores.quizImages);
-      let t= this.db.transaction(storeName,'readonly');
-      let s= t.objectStore(storeName);
-      let rq= s.get(url);
-      rq.onsuccess=()=>{
-        let rr= rq.result;
-        if(rr && rr.blob){
-          res(true);
-        } else {
-          res(false);
-        }
-      };
-      rq.onerror=()=>{
-        console.warn('检查缓存图片失败:',url);
-        res(false);
-      };
-    });
-  }
-  async getLocalImage(url,type='quiz'){
-    await this.ensureDbReady();
-    if(!url) return null;
-    return new Promise(res=>{
-      const storeName= (type==='banner'? this.stores.bannerImages:this.stores.quizImages);
-      let t= this.db.transaction(storeName,'readonly');
-      let s= t.objectStore(storeName);
-      let rq= s.get(url);
-      rq.onsuccess=()=>{
-        let r= rq.result;
-        if(r && r.blob){
-          res(URL.createObjectURL(r.blob));
-        }else{
-          res(null);
-        }
-      };
-      rq.onerror=()=>{
-        console.warn('获取缓存图片失败:',url);
-        res(null);
-      };
-    });
-  }
-  async downloadAndCacheImage(url,type='quiz'){
-    await this.ensureDbReady();
-    if(!url) return false;
-    try{
-      // 如果是YouTube缩略图，直接返回成功
-      if(url.includes('i.ytimg.com')) {
-        return true;
-      }
-      
-      if(!/\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url)
-        && !url.includes('drive.google.com')
-        && !url.includes('github.com')
-        && !url.includes('raw=true')){
-        console.error('无效图片URL格式:',url);
-        return false;
-      }
-      let processedUrl= url;
-      if(url.includes('github.com') && !url.includes('raw.githubusercontent.com')){
-        processedUrl= url.replace('github.com','raw.githubusercontent.com').replace('/blob/','/');
-      }
-      if(processedUrl.startsWith('file://')){
-        processedUrl= processedUrl.replace('file://','https://');
-      } else if(!processedUrl.startsWith('http://') && !processedUrl.startsWith('https://')){
-        processedUrl= 'https://'+ processedUrl;
-      }
-      try{
-        let dec= decodeURIComponent(processedUrl);
-        let [path,query]= dec.split('?');
-        let enc= encodeURI(path);
-        if(query) enc+= '?'+ query;
-        processedUrl= enc;
-      }catch(ee){}
-      // 为YouTube缩略图设置特殊的fetch选项
-      /*const isYouTubeImage = url.includes('i.ytimg.com');
-      const fetchOptions = {
-        credentials: 'omit',
-        headers: {
-          'Accept': 'image/*',
-          'User-Agent': 'Mozilla/5.0'
-        },
-        mode: isYouTubeImage ? 'no-cors' : 'cors'
-      };*/
-      const fetchOptions = {
-        credentials: 'omit',
-        headers: {
-          'Accept': 'image/*',
-          'User-Agent': 'Mozilla/5.0'
-        },
-        mode: 'cors'
-      };
-
-      let resp = await fetch(processedUrl, fetchOptions);
-      
-      if (!resp.ok) {
-        throw new Error(`HTTP error! status:${resp.status}`);
-      }
-
-      let blob = await resp.blob();
-      if (!blob.type.startsWith('image/')) {
-        throw new Error('下载内容不是图片');
-      }
-
-      // 注释掉图片存储逻辑
-      /*let storeName= (type==='banner'? this.stores.bannerImages:this.stores.quizImages);
-      return new Promise(resolve=>{
-        let t= this.db.transaction(storeName,'readwrite');
-        let s= t.objectStore(storeName);
-        let rq= s.put({url,blob,timestamp:Date.now()});
-        t.oncomplete=()=> resolve(true);
-        t.onerror= e=>{
-          console.error('写入图片DB失败:', e);
-          resolve(false);
-        };
-      });*/
-      
-      // 直接返回成功
-      return true;
-    }catch(e){
-      console.error('下载图片失败:', e.message);
-      this.updateStatus='needUpdate';
-      return false;
-    }
-  }
-  async saveQuizData(language, category, questions){
-    await this.ensureDbReady();
-    if(!this.db) return false;
-    try{
-      return new Promise(resolve=>{
-        let id= `${language}_${category}`;
-        let data= {id, language, category, questions, timestamp: Date.now()};
-        let t= this.db.transaction(this.stores.quizTest,'readwrite');
-        let s= t.objectStore(this.stores.quizTest);
-        let rq= s.put(data);
-        rq.onsuccess=()=> resolve(true);
-        rq.onerror=()=>{
-          console.error('保存题目数据失败:', id);
-          resolve(false);
-        };
+          request.onupgradeneeded = (event) => {
+              const db = event.target.result;
+              if (!db.objectStoreNames.contains(this.stores.quizImages)) {
+                  db.createObjectStore(this.stores.quizImages, { keyPath: 'url' });
+              }
+              if (!db.objectStoreNames.contains(this.stores.bannerImages)) {
+                  db.createObjectStore(this.stores.bannerImages, { keyPath: 'url' });
+              }
+              if (!db.objectStoreNames.contains(this.stores.quizTest)) {
+                  db.createObjectStore(this.stores.quizTest, { keyPath: 'id' });
+              }
+          };
       });
-    }catch(e){
-      console.error('saveQuizData出错:', e);
-      return false;
-    }
   }
-  async getQuizData(language, category){
-    await this.ensureDbReady();
-    if(!this.db) return null;
-    try{
-      return new Promise(resolve=>{
-        let id= `${language}_${category}`;
-        let t= this.db.transaction(this.stores.quizTest,'readonly');
-        let s= t.objectStore(this.stores.quizTest);
-        let rq= s.get(id);
-        rq.onsuccess=()=>{
-          let r= rq.result;
-          resolve(r? r.questions: null);
-        };
-        rq.onerror=()=>{
-          console.error('获取题目数据失败:', id);
-          resolve(null);
-        };
+
+  getLocalVersion() {
+      return localStorage.getItem(this.versionKey) || '';
+  }
+
+  saveLocalVersion(v) {
+      localStorage.setItem(this.versionKey, v);
+  }
+
+  normalizeImageUrl(url) {
+      if (!url) return '';
+      
+      // 处理 GitHub URL
+      let normalizedUrl = url;
+      if (url.includes('github.com') && !url.includes('raw.githubusercontent.com')) {
+          normalizedUrl = url
+              .replace('github.com', 'raw.githubusercontent.com')
+              .replace('/blob/', '/');
+      }
+      
+      // 移除 raw=true 参数
+      normalizedUrl = normalizedUrl.replace('?raw=true', '');
+      
+      // 处理 URL 编码
+      try {
+          // 先解码处理已编码的部分
+          const decoded = decodeURIComponent(normalizedUrl);
+          // 然后只编码路径部分
+          const [path, query] = decoded.split('?');
+          const encodedPath = encodeURI(path);
+          return query ? `${encodedPath}?${query}` : encodedPath;
+      } catch (e) {
+          console.warn('URL normalization error:', e);
+          return normalizedUrl;
+      }
+  }
+
+  async hasLocalImage(url, type = 'quiz') {
+      await this.ensureDbReady();
+      if (!url) return false;
+
+      const normalizedUrl = this.normalizeImageUrl(url);
+      
+      return new Promise(resolve => {
+          const storeName = (type === 'banner' ? this.stores.bannerImages : this.stores.quizImages);
+          const transaction = this.db.transaction(storeName, 'readonly');
+          const store = transaction.objectStore(storeName);
+          const request = store.get(normalizedUrl);
+
+          request.onsuccess = () => {
+              const result = request.result;
+              resolve(result && result.blob ? true : false);
+          };
+
+          request.onerror = () => {
+              console.warn('检查缓存图片失败:', normalizedUrl);
+              resolve(false);
+          };
       });
-    }catch(e){
-      console.error('getQuizData出错:', e);
-      return null;
-    }
   }
-  async updateFromSystemSheet(imageUrls) {
-    if (this.updateStatus === 'updating') {
-        console.log('更新进行中...');
-        return { version: this.getLocalVersion(), failedCount: 0 };
-    }
+
+  async getLocalImage(url, type = 'quiz') {
+      await this.ensureDbReady();
+      if (!url) return null;
+
+      const normalizedUrl = this.normalizeImageUrl(url);
+      console.log('Getting local image:', normalizedUrl);
+      
+      return new Promise(resolve => {
+          const storeName = (type === 'banner' ? this.stores.bannerImages : this.stores.quizImages);
+          const transaction = this.db.transaction(storeName, 'readonly');
+          const store = transaction.objectStore(storeName);
+          const request = store.get(normalizedUrl);
+
+          request.onsuccess = () => {
+              const result = request.result;
+              if (result && result.blob) {
+                  const objectUrl = URL.createObjectURL(result.blob);
+                  console.log('Successfully loaded local image:', normalizedUrl);
+                  resolve(objectUrl);
+              } else {
+                  console.warn('Image not found in local storage:', normalizedUrl);
+                  resolve(null);
+              }
+          };
+
+          request.onerror = (error) => {
+              console.error('Error retrieving image from local storage:', error);
+              resolve(null);
+          };
+      });
+  }
+
+  async downloadAndCacheImage(url, type = 'quiz') {
+    await this.ensureDbReady();
+    if (!url) return false;
+
+    const normalizedUrl = this.normalizeImageUrl(url);
+    console.log('Downloading and caching image:', normalizedUrl);
     
-    this.updateStatus = 'updating';
-    await this.ensureDbReady();
-
     try {
-        // Handle image updates
-        let checks = await Promise.all(imageUrls.map(async it => {
-            let has = await this.hasLocalImage(it.url, it.type);
-            return { url: it.url, type: it.type, needsDownload: !has };
-        }));
-        
-        let newOnes = checks.filter(x => x.needsDownload);
-        let failedCount = 0;
-        
-        for (const item of newOnes) {
-            let ok = await this.downloadAndCacheImage(item.url, item.type);
-            if (!ok) failedCount++;
+        // Check if already cached
+        const hasLocal = await this.hasLocalImage(normalizedUrl, type);
+        if (hasLocal) {
+            console.log('Image already cached:', normalizedUrl);
+            return true;
         }
 
-        // 清理未使用的图片
-        if (this.db) {
-            const neededUrls = new Set(imageUrls.map(i => i.url));
-            let tq = this.db.transaction(this.stores.quizImages, 'readwrite');
-            let tb = this.db.transaction(this.stores.bannerImages, 'readwrite');
-            let sq = tq.objectStore(this.stores.quizImages);
-            let sb = tb.objectStore(this.stores.bannerImages);
-            
-            let rq1 = sq.getAllKeys();
-            let rq2 = sb.getAllKeys();
-            
-            rq1.onsuccess = () => {
-                let keys = rq1.result || [];
-                keys.forEach(url => {
-                    if (!neededUrls.has(url)) {
-                        sq.delete(url);
-                    }
-                });
-            };
-            
-            rq2.onsuccess = () => {
-                let keys = rq2.result || [];
-                keys.forEach(url => {
-                    if (!neededUrls.has(url)) {
-                        sb.delete(url);
-                    }
-                });
-            };
+        // Download image using no-cors mode for YouTube thumbnails
+        const options = {
+            credentials: 'omit',
+            headers: {
+                'Accept': 'image/*'
+            }
+        };
+        
+        if (normalizedUrl.includes('ytimg.com')) {
+            options.mode = 'no-cors';
         }
 
-        // 生成新版本号
-        let newVersion = await this.generateVersion(imageUrls.map(i => i.url));
-        this.saveLocalVersion(newVersion);
-        this.updateStatus = 'latest';
+        const response = await fetch(normalizedUrl, options);
+
+        if (!response.ok && response.type !== 'opaque') {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const blob = await response.blob();
         
-        return { version: newVersion, failedCount };
+        // Store in IndexedDB
+        const storeName = (type === 'banner' ? this.stores.bannerImages : this.stores.quizImages);
+        await new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.put({
+                url: normalizedUrl,
+                blob,
+                timestamp: Date.now()
+            });
+
+            transaction.oncomplete = () => resolve(true);
+            transaction.onerror = (e) => reject(e);
+        });
+
+        console.log('Successfully cached image:', normalizedUrl);
+        return true;
     } catch (error) {
-        this.updateStatus = 'needUpdate';
-        throw error;
+        console.error('Failed to download and cache image:', error);
+        return false;
     }
 }
 
-  
-  async generateVersion(imageUrls = []) {
-    await this.ensureDbReady();
-    
-    // 获取所有题目数据，使用单个事务确保数据一致性
-    const transaction = this.db.transaction(this.stores.quizTest, 'readonly');
-    const store = transaction.objectStore(this.stores.quizTest);
-    
-    const getAllData = () => new Promise((resolve, reject) => {
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-    
-    let quizData;
-    try {
-      quizData = await getAllData();
-    } catch (error) {
-      console.error('获取题目数据失败:', error);
-      quizData = [];
-    }
-    
-    // 确保所有数组的排序是确定性的
-    const sortedImageUrls = [...imageUrls].sort((a, b) => a.localeCompare(b));
-    const sortedQuizData = quizData
-      .filter(d => d && d.id && Array.isArray(d.questions))
-      .sort((a, b) => a.id.localeCompare(b.id))
-      .map(d => {
-        const sortedQuestions = d.questions
-          .filter(q => q && typeof q.question === 'string')
-          .map(q => ({
-            ...q,
-            options: (Array.isArray(q.options) ? [...q.options] : []).sort(),
-            image: q.image || '',
-            explanation: q.explanation || ''
-          }))
-          .sort((a, b) => {
-            const qCompare = a.question.localeCompare(b.question);
-            if (qCompare !== 0) return qCompare;
-            return a.answer.localeCompare(b.answer);
+  async saveQuizData(language, category, questions) {
+      await this.ensureDbReady();
+      if (!this.db) return false;
+      try {
+          return new Promise(resolve => {
+              const id = `${language}_${category}`;
+              const data = {
+                  id,
+                  language,
+                  category,
+                  questions,
+                  timestamp: Date.now()
+              };
+              const transaction = this.db.transaction(this.stores.quizTest, 'readwrite');
+              const store = transaction.objectStore(this.stores.quizTest);
+              const request = store.put(data);
+              request.onsuccess = () => resolve(true);
+              request.onerror = () => {
+                  console.error('保存题目数据失败:', id);
+                  resolve(false);
+              };
           });
+      } catch (e) {
+          console.error('saveQuizData出错:', e);
+          return false;
+      }
+  }
 
-        return {
-          id: d.id,
-          questions: sortedQuestions
-        };
+  async getQuizData(language, category) {
+      await this.ensureDbReady();
+      if (!this.db) return null;
+      try {
+          return new Promise(resolve => {
+              const id = `${language}_${category}`;
+              const transaction = this.db.transaction(this.stores.quizTest, 'readonly');
+              const store = transaction.objectStore(this.stores.quizTest);
+              const request = store.get(id);
+              request.onsuccess = () => {
+                  const result = request.result;
+                  resolve(result ? result.questions : null);
+              };
+              request.onerror = () => {
+                  console.error('获取题目数据失败:', id);
+                  resolve(null);
+              };
+          });
+      } catch (e) {
+          console.error('getQuizData出错:', e);
+          return null;
+      }
+  }
+
+  async generateVersion(imageUrls = []) {
+      await this.ensureDbReady();
+      
+      const transaction = this.db.transaction(this.stores.quizTest, 'readonly');
+      const store = transaction.objectStore(this.stores.quizTest);
+      
+      const getAllData = () => new Promise((resolve, reject) => {
+          const request = store.getAll();
+          request.onsuccess = () => resolve(request.result || []);
+          request.onerror = () => reject(request.error);
       });
+      
+      let quizData;
+      try {
+          quizData = await getAllData();
+      } catch (error) {
+          console.error('获取题目数据失败:', error);
+          quizData = [];
+      }
+      
+      const sortedImageUrls = [...imageUrls].sort((a, b) => a.localeCompare(b));
+      const sortedQuizData = quizData
+          .filter(d => d && d.id && Array.isArray(d.questions))
+          .sort((a, b) => a.id.localeCompare(b.id))
+          .map(d => ({
+              id: d.id,
+              questions: d.questions
+                  .filter(q => q && typeof q.question === 'string')
+                  .map(q => ({
+                      ...q,
+                      options: (Array.isArray(q.options) ? [...q.options] : []).sort(),
+                      image: q.image || '',
+                      explanation: q.explanation || ''
+                  }))
+                  .sort((a, b) => {
+                      const qCompare = a.question.localeCompare(b.question);
+                      if (qCompare !== 0) return qCompare;
+                      return a.answer.localeCompare(b.answer);
+                  })
+          }));
 
-    // 构建一个确定性的字符串表示
-    const contentParts = [
-      sortedImageUrls.join(','),
-      sortedQuizData.map(d => {
-        const questionHashes = d.questions.map(q => [
-          q.question,
-          q.answer,
-          q.options.join('|'),
-          q.image,
-          q.explanation
-        ].join('::'));
-        return `${d.id}:${questionHashes.join('|')}`;
-      }).join(',')
-    ];
+      const contentParts = [
+          sortedImageUrls.join(','),
+          sortedQuizData.map(d => {
+              const questionHashes = d.questions.map(q => [
+                  q.question,
+                  q.answer,
+                  q.options.join('|'),
+                  q.image,
+                  q.explanation
+              ].join('::'));
+              return `${d.id}:${questionHashes.join('|')}`;
+          }).join(',')
+      ];
 
-    const contentString = contentParts.join('|');
-    if (!contentString) return 'v0';
+      const contentString = contentParts.join('|');
+      if (!contentString) return 'v0';
 
-    // 使用更稳定的哈希算法
-    let hash = 0;
-    const prime = 31;
-    for (let i = 0; i < contentString.length; i++) {
-      hash = Math.imul(hash, prime) + contentString.charCodeAt(i) | 0;
-    }
-    
-    return 'v' + Math.abs(hash).toString(36);
+      let hash = 0;
+      const prime = 31;
+      for (let i = 0; i < contentString.length; i++) {
+          hash = Math.imul(hash, prime) + contentString.charCodeAt(i) | 0;
+      }
+      
+      return 'v' + Math.abs(hash).toString(36);
+  }
+
+  async updateFromSystemSheet(imageUrls) {
+      if (this.updateStatus === 'updating') {
+          console.log('更新进行中...');
+          return { version: this.getLocalVersion(), failedCount: 0 };
+      }
+      
+      this.updateStatus = 'updating';
+      await this.ensureDbReady();
+
+      try {
+          const checks = await Promise.all(imageUrls.map(async item => {
+              const has = await this.hasLocalImage(item.url, item.type);
+              return { url: item.url, type: item.type, needsDownload: !has };
+          }));
+          
+          const newOnes = checks.filter(x => x.needsDownload);
+          let failedCount = 0;
+          
+          for (const item of newOnes) {
+              const ok = await this.downloadAndCacheImage(item.url, item.type);
+              if (!ok) failedCount++;
+          }
+
+          // 清理未使用的图片
+          if (this.db) {
+              const neededUrls = new Set(imageUrls.map(i => i.url));
+              const tq = this.db.transaction(this.stores.quizImages, 'readwrite');
+              const tb = this.db.transaction(this.stores.bannerImages, 'readwrite');
+              const sq = tq.objectStore(this.stores.quizImages);
+              const sb = tb.objectStore(this.stores.bannerImages);
+              
+              const rq1 = sq.getAllKeys();
+              const rq2 = sb.getAllKeys();
+              
+              rq1.onsuccess = () => {
+                  const keys = rq1.result || [];
+                  keys.forEach(url => {
+                      if (!neededUrls.has(url)) {
+                          sq.delete(url);
+                      }
+                  });
+              };
+              
+              rq2.onsuccess = () => {
+                  const keys = rq2.result || [];
+                  keys.forEach(url => {
+                      if (!neededUrls.has(url)) {
+                          sb.delete(url);
+                      }
+                  });
+              };
+          }
+
+          const newVersion = await this.generateVersion(imageUrls.map(i => i.url));
+          this.saveLocalVersion(newVersion);
+          this.updateStatus = 'latest';
+          
+          return { version: newVersion, failedCount };
+      } catch (error) {
+          this.updateStatus = 'needUpdate';
+          throw error;
+      }
   }
 }
 
