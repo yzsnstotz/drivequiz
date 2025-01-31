@@ -3075,42 +3075,42 @@ async function getValidYouTubeThumbnail(videoId) {
       }
   }
 
-  // If no cached version exists, try to fetch using no-cors mode
+  // If no cached version exists, try to fetch each quality
   for (const quality of qualities) {
       const thumbnailUrl = `https://i.ytimg.com/vi/${videoId}/${quality}.jpg`;
       try {
-          const response = await fetch(thumbnailUrl, {
-              mode: 'no-cors',
-              cache: 'no-cache',
-              credentials: 'omit',
-              headers: {
-                  'Accept': 'image/webp,image/apng,image/*'
-              }
-          });
-          
-          // Since no-cors mode doesn't allow us to read the response,
-          // we'll create a blob URL and try to load it as an image
-          const testImage = new Image();
+          // Try to download and cache the image directly
+          const success = await localDataManager.downloadAndCacheImage(thumbnailUrl, 'banner');
+          if (success) {
+              console.log(`Successfully cached YouTube thumbnail: ${quality}`);
+              return thumbnailUrl;
+          }
+
+          // If direct download fails, try fetching with Image object
           const loadPromise = new Promise((resolve, reject) => {
-              testImage.onload = () => resolve(true);
-              testImage.onerror = () => reject(new Error('Image load failed'));
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.onload = () => resolve(true);
+              img.onerror = () => reject(new Error(`Failed to load ${quality} thumbnail`));
+              img.src = thumbnailUrl;
           });
-          
-          testImage.src = thumbnailUrl;
+
           await loadPromise;
-          
-          // If we get here, the image loaded successfully
-          await localDataManager.downloadAndCacheImage(thumbnailUrl, 'banner');
-          return thumbnailUrl;
-          
+          // If image loads successfully, try caching again
+          const secondAttempt = await localDataManager.downloadAndCacheImage(thumbnailUrl, 'banner');
+          if (secondAttempt) {
+              return thumbnailUrl;
+          }
       } catch (e) {
           console.warn(`Failed to fetch ${quality} thumbnail:`, e);
           continue;
       }
   }
 
-  // If all attempts fail, return null
-  return null;
+  // If all attempts fail, return default thumbnail URL
+  const defaultThumbnail = `https://i.ytimg.com/vi/${videoId}/default.jpg`;
+  console.warn(`Falling back to default thumbnail: ${defaultThumbnail}`);
+  return defaultThumbnail;
 }
 
 
@@ -3852,9 +3852,50 @@ class LocalDataManager {
           request.onsuccess = () => {
               const result = request.result;
               if (result && result.blob) {
-                  const objectUrl = URL.createObjectURL(result.blob);
-                  console.log('Successfully loaded local image:', normalizedUrl);
-                  resolve(objectUrl);
+                  try {
+                      // 创建一个新的Blob对象，确保类型正确
+                      const imageBlob = new Blob([result.blob], { type: result.blob.type || 'image/jpeg' });
+                      const objectUrl = URL.createObjectURL(imageBlob);
+                      
+                      // 验证objectUrl是否有效
+                      const img = new Image();
+                      let timeoutId;
+
+                      const cleanup = () => {
+                          clearTimeout(timeoutId);
+                          URL.revokeObjectURL(objectUrl);
+                      };
+
+                      img.onload = () => {
+                          cleanup();
+                          // 确保图片尺寸有效
+                          if (img.width > 0 && img.height > 0) {
+                              const newObjectUrl = URL.createObjectURL(imageBlob);
+                              resolve(newObjectUrl);
+                          } else {
+                              console.warn('Invalid image dimensions for:', normalizedUrl);
+                              resolve(null);
+                          }
+                      };
+
+                      img.onerror = () => {
+                          cleanup();
+                          console.warn('Invalid image data for:', normalizedUrl);
+                          resolve(null);
+                      };
+
+                      // 设置加载超时
+                      timeoutId = setTimeout(() => {
+                          cleanup();
+                          console.warn('Image load timeout for:', normalizedUrl);
+                          resolve(null);
+                      }, 5000);
+
+                      img.src = objectUrl;
+                  } catch (error) {
+                      console.error('Error processing image blob:', error);
+                      resolve(null);
+                  }
               } else {
                   console.warn('Image not found in local storage:', normalizedUrl);
                   resolve(null);
